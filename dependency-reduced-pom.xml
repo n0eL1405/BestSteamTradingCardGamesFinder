@@ -4,7 +4,7 @@
   <groupId>de.leon</groupId>
   <artifactId>bstcgf</artifactId>
   <name>Best Steam Trading Card Games Finder</name>
-  <version>1.0</version>
+  <version>${app.version}</version>
   <build>
     <plugins>
       <plugin>
@@ -30,7 +30,8 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <finalName>${app.output.name}</finalName>
               <transformers>
                 <transformer>
                   <mainClass>de.leon.bstcgf.Main</mainClass>
@@ -108,10 +109,12 @@
   <properties>
     <java.version>11</java.version>
     <maven.compiler.source>${java.version}</maven.compiler.source>
+    <app.version>1.0</app.version>
     <lombok.version>1.18.26</lombok.version>
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <javafx.current_version>11.0.2</javafx.current_version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <app.output.name>BSTCGF-${app.version}</app.output.name>
     <junit.version>5.9.2</junit.version>
   </properties>
 </project>
