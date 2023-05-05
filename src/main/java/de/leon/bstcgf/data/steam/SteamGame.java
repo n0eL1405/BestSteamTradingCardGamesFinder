@@ -20,13 +20,11 @@ public class SteamGame {
         @Override
         public String toString() {
             switch (this) {
-                case SUCCESS -> {
+                case SUCCESS:
                     return "success";
-                }
-                case DATA -> {
+                case DATA:
                     return "data";
-                }
-            };
+            }
             return null;
         }
     }

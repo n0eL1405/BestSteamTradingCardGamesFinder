@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -136,7 +137,7 @@ public class BstcgfController implements Initializable {
             .stream()
             .sorted(Comparator.comparing(TableGameData::getName))
             .sorted(Comparator.comparing(TableGameData::getRating))
-            .toList()
+            .collect(Collectors.toList())
         );
     }
 }

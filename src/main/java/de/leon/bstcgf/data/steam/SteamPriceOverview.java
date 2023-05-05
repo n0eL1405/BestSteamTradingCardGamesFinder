@@ -37,25 +37,19 @@ public class SteamPriceOverview {
         @Override
         public String toString() {
             switch (this) {
-                case CURRENCY -> {
+                case CURRENCY:
                     return "currency";
-                }
-                case INITIAL -> {
+                case INITIAL:
                     return "initial";
-                }
-                case FINAL -> {
+                case FINAL:
                     return "final";
-                }
-                case DISCOUNT_PERCENT -> {
+                case DISCOUNT_PERCENT:
                     return "discount_percent";
-                }
-                case INITIAL_FORMATTED -> {
+                case INITIAL_FORMATTED:
                     return "initial_formatted";
-                }
-                case FINAL_FORMATTED -> {
+                case FINAL_FORMATTED:
                     return "final_formatted";
-                }
-            };
+            }
             return null;
         }
     }

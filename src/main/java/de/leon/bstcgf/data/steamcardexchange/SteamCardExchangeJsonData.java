@@ -83,9 +83,8 @@ public class SteamCardExchangeJsonData {
         @Override
         public String toString() {
             switch (this) {
-                case DATE -> {
+                case DATE:
                     return "data";
-                }
             }
             return null;
         }

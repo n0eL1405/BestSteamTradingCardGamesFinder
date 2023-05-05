@@ -16,10 +16,9 @@ public class SteamGameData {
         @Override
         public String toString() {
             switch (this) {
-                case PRICE_OVERVIEW -> {
+                case PRICE_OVERVIEW:
                     return "price_overview";
-                }
-            };
+            }
             return null;
         }
     }
