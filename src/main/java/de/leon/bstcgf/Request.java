@@ -1,5 +1,6 @@
 package de.leon.bstcgf;
 
+import de.leon.bstcgf.data.GitHubInformation;
 import de.leon.bstcgf.data.steam.SteamJsonData;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeJsonData;
 import java.io.BufferedReader;
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -66,5 +68,20 @@ public class Request {
         }
 
         return SteamJsonData.fromJSONObject(jsonObject);
+    }
+
+    public static GitHubInformation getInfoLatestRelease() throws IOException {
+
+        URL url = new URL("https://api.github.com/repos/n0eL1405/BestSteamTradingCardGamesFinder/releases/latest");
+        InputStream inputStream = url.openStream();
+        JSONObject jsonObject;
+
+        try {
+            jsonObject = new JSONObject(readAll(new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))));
+        } finally {
+            inputStream.close();
+        }
+
+        return GitHubInformation.fromJSONObject(jsonObject);
     }
 }

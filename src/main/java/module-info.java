@@ -4,6 +4,7 @@ module de.leon.bstcgf {
     requires java.annotation;
     requires static lombok;
     requires org.json;
+    requires java.desktop;
 
     opens de.leon.bstcgf to javafx.fxml;
     exports de.leon.bstcgf;
