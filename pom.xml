@@ -15,7 +15,9 @@
     <app.version>1.1</app.version>
     <app.versionString>v${app.version}</app.versionString>
     <app.output.name>BSTCGF-${app.versionString}</app.output.name>
+
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
     <junit.version>5.9.2</junit.version>
     <lombok.version>1.18.26</lombok.version>
     <javafx.current_version>11.0.2</javafx.current_version>

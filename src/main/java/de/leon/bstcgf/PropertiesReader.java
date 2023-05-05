@@ -4,14 +4,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+/**
+ * Copied from Baeldung.com
+ *
+ * @see <a href="https://www.baeldung.com/java-accessing-maven-properties">www.baeldung.com</a>
+ */
 public class PropertiesReader {
-    private Properties properties;
+    private final Properties properties;
 
     public PropertiesReader(String propertyFileName) throws IOException {
-        InputStream is = getClass().getClassLoader()
-            .getResourceAsStream(propertyFileName);
         this.properties = new Properties();
-        this.properties.load(is);
+
+        InputStream inputStream = getClass().getClassLoader()
+            .getResourceAsStream(propertyFileName);
+        this.properties.load(inputStream);
     }
 
     public String getProperty(String propertyName) {
