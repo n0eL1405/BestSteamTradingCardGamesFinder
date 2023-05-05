@@ -41,3 +41,5 @@ The Steam Web API request has a maximum off 200 requests per 5 minutes, right no
 Don't worry if you get blocked, just wait a few minutes (probably 5, but that's just a guess) or changing your IP e.g. by using a VPN and try again.
    
 ---
+   
+### Developed in Java 17, downgraded to Java 11. Currently only tested with Windows 11.
