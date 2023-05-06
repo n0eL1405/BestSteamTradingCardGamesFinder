@@ -18,11 +18,9 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -30,11 +28,11 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -43,11 +41,12 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
-import javafx.util.StringConverter;
 import org.controlsfx.control.SearchableComboBox;
-import org.controlsfx.control.textfield.TextFields;
 
 public class BstcgfController implements Initializable {
+
+    @FXML
+    public ProgressBar progressionBar;
 
     @FXML
     VBox vBox;
@@ -114,6 +113,8 @@ public class BstcgfController implements Initializable {
         initDropDown();
 
         initTable();
+
+        initProgressionBar();
 
     }
 
@@ -334,6 +335,16 @@ public class BstcgfController implements Initializable {
 
     }
 
+    private void initProgressionBar() {
+
+        progressionBar.autosize();
+
+    }
+
+    private Double calcProgressDouble(Integer currentProgress, Integer fullProgress) {
+        return ((double) currentProgress) / ((double) fullProgress);
+    }
+
     @Deprecated
     private List<CountryCode> matchingItems(List<CountryCode> allItems, String searchTerm) {
         List<CountryCode> matches = new ArrayList<>();
@@ -364,6 +375,7 @@ public class BstcgfController implements Initializable {
             try {
 
                 SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
+                AtomicReference<Integer> gamesCounter = new AtomicReference<>(0);
 
                 List<SteamCardExchangeGameData> steamCardExchangeGameDataList = new LinkedList<>(
                     steamCardExchangeJsonData.getSteamCardExchangeGameData());
@@ -371,6 +383,7 @@ public class BstcgfController implements Initializable {
                 steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
 
                     try {
+
                         SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
                             packages.getOnlyIds(), countryCode);
                         List<SteamGame> steamGameList = new LinkedList<>(
@@ -389,6 +402,10 @@ public class BstcgfController implements Initializable {
                                 tableGameDataObservableList.add(
                                     new TableGameData(sg, steamCardExchangeGameData));
                             }
+
+                            gamesCounter.set(gamesCounter.get() + 1);
+                            double progress = calcProgressDouble(gamesCounter.get(), steamCardExchangeGameDataList.size()); // geht nich
+                            progressionBar.setProgress(progress);
                         });
 
                         // sorting the list
