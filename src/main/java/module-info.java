@@ -5,6 +5,7 @@ module de.leon.bstcgf {
     requires static lombok;
     requires org.json;
     requires java.desktop;
+    requires org.controlsfx.controls;
 
     opens de.leon.bstcgf to javafx.fxml;
     exports de.leon.bstcgf;

@@ -56,6 +56,10 @@
               <noManPages>true</noManPages>
               <stripDebug>true</stripDebug>
               <noHeaderFiles>true</noHeaderFiles>
+              <options>
+                <option>--add-exports</option>
+                <option>javafx.base/com.sun.javafx.event=org.controlsfx.controls</option>
+              </options>
             </configuration>
           </execution>
         </executions>

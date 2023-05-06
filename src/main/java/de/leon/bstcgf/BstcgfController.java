@@ -1,5 +1,6 @@
 package de.leon.bstcgf;
 
+import de.leon.bstcgf.data.CountryCode;
 import de.leon.bstcgf.data.TableGameData;
 import de.leon.bstcgf.data.steam.SteamGame;
 import de.leon.bstcgf.data.steam.SteamJsonData;
@@ -10,6 +11,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,19 +24,33 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
+import javafx.util.StringConverter;
+import org.controlsfx.control.SearchableComboBox;
+import org.controlsfx.control.textfield.TextFields;
 
 public class BstcgfController implements Initializable {
 
     @FXML
     VBox vBox;
+
+    @FXML
+    HBox hBox;
+
+    @FXML
+    SearchableComboBox<CountryCode> countryCodeSearchComboBox;
 
     @FXML
     private TableView<TableGameData> tableGameDataTableView;
@@ -58,18 +74,38 @@ public class BstcgfController implements Initializable {
     private Button loadDataButton;
 
     private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
+    private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
     private final static String STEAMDB_URL = "https://steamdb.info/app/";
 
+    private CountryCode selectedCountryCode;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
+        try {
+            countryCodesObservableList.clear();
+            countryCodesObservableList.addAll(Request.getSteamCountryCodes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        selectedCountryCode = countryCodesObservableList.get(0);
 
         initUI();
 
     }
 
     private void initUI() {
+
+        initDropDown();
+
+        initTable();
+
+    }
+
+    private void initTable() {
 
         setCellValueFactories();
 
@@ -104,7 +140,7 @@ public class BstcgfController implements Initializable {
             steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
                 try {
                     SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                        packages.getOnlyIds());
+                        packages.getOnlyIds(), selectedCountryCode);
                     steamGameList.addAll(steamJsonData.getSteamGames());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -240,5 +276,48 @@ public class BstcgfController implements Initializable {
                 return row;
             }
         );
+    }
+
+    private void initDropDown() {
+
+        countryCodeSearchComboBox.setItems(countryCodesObservableList);
+        countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
+
+        Callback<ListView<CountryCode>, ListCell<CountryCode>> cellFactory = new Callback<>() {
+            @Override
+            public ListCell<CountryCode> call(ListView<CountryCode> countryCodeListView) {
+                return new ListCell<>() {
+                    @Override
+                    protected void updateItem(CountryCode countryCode, boolean empty) {
+                        super.updateItem(countryCode, empty);
+
+                        if (countryCode == null || empty) {
+                            setText(null);
+                        } else {
+                            setText(countryCode.getLabel());
+                        }
+                    }
+                };
+            }
+        };
+
+        countryCodeSearchComboBox.setButtonCell(cellFactory.call(null));
+        countryCodeSearchComboBox.setCellFactory(cellFactory);
+
+    }
+
+    private List<CountryCode> matchingItems(List<CountryCode> allItems, String searchTerm) {
+        List<CountryCode> matches = new ArrayList<>();
+        allItems.forEach(cc -> {
+            if (cc.getCode().toLowerCase().contains(searchTerm.toLowerCase())
+                || cc.getLabel().toLowerCase().contains(searchTerm.toLowerCase())) {
+                matches.add(cc);
+            }
+        });
+        return matches;
+    }
+
+    public void searchComboAction(ActionEvent actionEvent) {
+        selectedCountryCode = countryCodeSearchComboBox.getValue();
     }
 }

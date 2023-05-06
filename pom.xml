@@ -38,6 +38,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.controlsfx</groupId>
+      <artifactId>controlsfx</artifactId>
+      <version>11.1.2</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
@@ -139,6 +145,10 @@
               <noManPages>true</noManPages>
               <stripDebug>true</stripDebug>
               <noHeaderFiles>true</noHeaderFiles>
+              <options>
+                <option>--add-exports</option>
+                <option>javafx.base/com.sun.javafx.event=org.controlsfx.controls</option>
+              </options>
             </configuration>
           </execution>
         </executions>
