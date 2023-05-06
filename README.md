@@ -40,6 +40,11 @@ The Steam Web API request has a maximum off 200 requests per 5 minutes, right no
    
 Don't worry if you get blocked, just wait a few minutes (probably 5, but that's just a guess) or changing your IP e.g. by using a VPN and try again.
    
+Currently, EU is set as region for the prices, in the future it will be possible to change the price region.   
+If a game is Free2Play, it will be sorted out, because you have to spend ~10$ to get one card. 
+The method used for this will also sort out games that are unavailable in your region (because the Steam API will not return price information for those games). 
+I believe the blocking depends on your IP address and not on the used country code (as I said it's EU at the moment), but I'm not sure about that.
+   
 ---
    
 ### Developed in Java 17, downgraded to Java 11. Currently only tested with Windows 11.
