@@ -16,10 +16,13 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -73,13 +76,19 @@ public class BstcgfController implements Initializable {
     @FXML
     private Button loadDataButton;
 
-    private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
+    private ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
     private final static String STEAMDB_URL = "https://steamdb.info/app/";
 
     private CountryCode selectedCountryCode;
+
+    private final Executor executor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "controller-thread");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -123,9 +132,27 @@ public class BstcgfController implements Initializable {
     }
 
     public void clickAction(ActionEvent actionEvent) {
-        loadData();
+        //loadData();
+        countryCodeSearchComboBox.setDisable(true);
+
+        LoadGameDataFromSteamTask loadGameDataFromSteamTask = new LoadGameDataFromSteamTask(
+            selectedCountryCode);
+
+        loadGameDataFromSteamTask.setOnSucceeded(wse -> {
+            tableGameDataObservableList.setAll(
+                new ArrayList<>(loadGameDataFromSteamTask.getValue()));
+            countryCodeSearchComboBox.setDisable(false);
+        });
+
+        loadGameDataFromSteamTask.setOnFailed(wse -> {
+                loadGameDataFromSteamTask.getException().printStackTrace();
+                countryCodeSearchComboBox.setDisable(true);
+            });
+
+        executor.execute(loadGameDataFromSteamTask);
     }
 
+    @Deprecated
     private void loadData() {
 
         tableGameDataObservableList.clear();
@@ -306,6 +333,7 @@ public class BstcgfController implements Initializable {
 
     }
 
+    @Deprecated
     private List<CountryCode> matchingItems(List<CountryCode> allItems, String searchTerm) {
         List<CountryCode> matches = new ArrayList<>();
         allItems.forEach(cc -> {
@@ -319,5 +347,71 @@ public class BstcgfController implements Initializable {
 
     public void searchComboAction(ActionEvent actionEvent) {
         selectedCountryCode = countryCodeSearchComboBox.getValue();
+    }
+
+    private static class LoadGameDataFromSteamTask extends Task<ObservableList<TableGameData>> {
+
+        ObservableList<TableGameData> steamGames = FXCollections.observableArrayList();
+        private final CountryCode countryCode;
+
+        private LoadGameDataFromSteamTask(CountryCode countryCode) {
+            this.countryCode = countryCode;
+        }
+
+        @Override
+        protected ObservableList<TableGameData> call() throws Exception {
+
+            try {
+
+                SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
+
+                List<SteamCardExchangeGameData> steamCardExchangeGameDataList = new LinkedList<>(
+                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
+
+                steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
+
+                    List<TableGameData> tableGameDataList = new LinkedList<>();
+
+                    try {
+                        SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
+                            packages.getOnlyIds(), countryCode);
+                        List<SteamGame> steamGameList = new LinkedList<>(
+                            steamJsonData.getSteamGames());
+
+                        steamGameList.forEach(sg -> {
+
+                            SteamCardExchangeGameData steamCardExchangeGameData = steamCardExchangeGameDataList.stream()
+                                .filter(scegd -> scegd.getId() == sg.getId())
+                                .findFirst().orElseThrow();
+
+                            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
+                            // using initial price should still add free2keep games in the list;
+                            if (sg.getData().getSteamPriceOverview().getInitialPrice() > 0) {
+                                tableGameDataList.add(
+                                    new TableGameData(sg, steamCardExchangeGameData));
+                            }
+                        });
+
+                        steamGames.addAll(tableGameDataList);
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                // sorting the list
+                steamGames.setAll(steamGames
+                    .stream()
+                    .sorted(Comparator.comparing(TableGameData::getName))
+                    .sorted(Comparator.comparing(TableGameData::getRating))
+                    .collect(Collectors.toList())
+                );
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            return steamGames;
+        }
     }
 }
