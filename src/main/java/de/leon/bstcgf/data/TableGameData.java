@@ -57,7 +57,7 @@ public class TableGameData {
         this.name.set(name);
     }
 
-    public int getId() {
+    public Integer getId() {
         return id.get();
     }
 
@@ -69,7 +69,7 @@ public class TableGameData {
         this.id.set(id);
     }
 
-    public int getCards() {
+    public Integer getCards() {
         return cards;
     }
 
@@ -101,7 +101,7 @@ public class TableGameData {
         this.price.set(price);
     }
 
-    public double getRating() {
+    public Double getRating() {
         return rating.get();
     }
 
