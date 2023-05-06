@@ -38,7 +38,7 @@ Just start the programm, click <code>Load Games</code> and wait a little bit.
 The Steam Web API request has a maximum off 200 requests per 5 minutes, right now the programm requires 111 requests 
 (there 11.075 Games with Trading Cards at the moment of writing this and each Steam Web API request can have up to 100 IDs). This means you can get the Data once every 5 minutes without getting blocked from the Steam Web API.
    
-Don't worry if you get blocked, just wait a few minutes (probably 5, but that's just a guess) or changing your IP e.g. by using a VPN and try again.
+Don't worry if you get blocked, just wait a few minutes (probably 5, but that's just a guess) or change your IP e.g. by using a VPN and try again.
    
 Currently, EU is set as region for the prices, in the future it will be possible to change the price region.   
 If a game is Free2Play, it will be sorted out, because you have to spend ~10$ to get one card. 
