@@ -5,29 +5,33 @@
 <?import javafx.scene.layout.*?>
 <?import org.controlsfx.control.*?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.leon.bstcgf.BstcgfController">
-  <VBox fx:id="vBox" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.leon.bstcgf.BstcgfController">
+  <VBox fx:id="vBox" prefHeight="400.0" prefWidth="600.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
     <HBox fx:id="hBox" alignment="CENTER_LEFT" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
       <VBox.margin>
         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
       </VBox.margin>
-      <Button fx:id="loadDataButton" alignment="CENTER" mnemonicParsing="false" onAction="#clickAction" text="Load Games" textAlignment="CENTER">
-        <HBox.margin>
-          <Insets right="5.0" />
-        </HBox.margin>
-      </Button>
-         <SearchableComboBox fx:id="countryCodeSearchComboBox" onAction="#searchComboAction">
+      <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+        <Button fx:id="loadDataButton" alignment="CENTER" mnemonicParsing="false" onAction="#clickAction" text="Load Games" textAlignment="CENTER" />
             <HBox.margin>
                <Insets right="5.0" />
             </HBox.margin>
-         </SearchableComboBox>
-         <ProgressBar fx:id="progressionBar" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" nodeOrientation="LEFT_TO_RIGHT" progress="0.0">
-            <padding>
+      </StackPane>
+      <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+        <SearchableComboBox fx:id="countryCodeSearchComboBox" onAction="#searchComboAction" />
+            <HBox.margin>
                <Insets right="5.0" />
-            </padding>
-         </ProgressBar>
+            </HBox.margin>
+      </StackPane>
+      <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" nodeOrientation="LEFT_TO_RIGHT" HBox.hgrow="ALWAYS">
+        <ProgressBar fx:id="progressionBar" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" nodeOrientation="LEFT_TO_RIGHT" progress="0.0">
+          <padding>
+            <Insets right="5.0" />
+          </padding>
+        </ProgressBar>
+      </StackPane>
     </HBox>
-    <TableView fx:id="tableGameDataTableView" editable="true" focusTraversable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="-Infinity" prefWidth="-Infinity" VBox.vgrow="ALWAYS">
+    <TableView fx:id="tableGameDataTableView" editable="true" focusTraversable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" VBox.vgrow="ALWAYS">
       <columns>
         <TableColumn fx:id="tableColumnName" editable="false" sortable="false" text="Name" />
         <TableColumn fx:id="tableColumnId" editable="false" sortable="false" text="ID" />
@@ -42,5 +46,11 @@
         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
       </VBox.margin>
     </TableView>
+      <rotationAxis>
+         <Point3D />
+      </rotationAxis>
   </VBox>
+   <rotationAxis>
+      <Point3D />
+   </rotationAxis>
 </AnchorPane>
