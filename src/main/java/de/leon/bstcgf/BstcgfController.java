@@ -19,7 +19,10 @@ import java.util.ResourceBundle;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -139,15 +142,13 @@ public class BstcgfController implements Initializable {
             selectedCountryCode);
 
         loadGameDataFromSteamTask.setOnSucceeded(wse -> {
-            tableGameDataObservableList.setAll(
-                new ArrayList<>(loadGameDataFromSteamTask.getValue()));
             countryCodeSearchComboBox.setDisable(false);
         });
 
         loadGameDataFromSteamTask.setOnFailed(wse -> {
-                loadGameDataFromSteamTask.getException().printStackTrace();
-                countryCodeSearchComboBox.setDisable(true);
-            });
+            loadGameDataFromSteamTask.getException().printStackTrace();
+            countryCodeSearchComboBox.setDisable(false);
+        });
 
         executor.execute(loadGameDataFromSteamTask);
     }
@@ -349,9 +350,8 @@ public class BstcgfController implements Initializable {
         selectedCountryCode = countryCodeSearchComboBox.getValue();
     }
 
-    private static class LoadGameDataFromSteamTask extends Task<ObservableList<TableGameData>> {
+    private class LoadGameDataFromSteamTask extends Task<Void> {
 
-        ObservableList<TableGameData> steamGames = FXCollections.observableArrayList();
         private final CountryCode countryCode;
 
         private LoadGameDataFromSteamTask(CountryCode countryCode) {
@@ -359,7 +359,7 @@ public class BstcgfController implements Initializable {
         }
 
         @Override
-        protected ObservableList<TableGameData> call() throws Exception {
+        protected Void call() throws Exception {
 
             try {
 
@@ -369,8 +369,6 @@ public class BstcgfController implements Initializable {
                     steamCardExchangeJsonData.getSteamCardExchangeGameData());
 
                 steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
-
-                    List<TableGameData> tableGameDataList = new LinkedList<>();
 
                     try {
                         SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
@@ -386,32 +384,34 @@ public class BstcgfController implements Initializable {
 
                             // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
                             // using initial price should still add free2keep games in the list;
-                            if (sg.getData().getSteamPriceOverview().getInitialPrice() > 0) {
-                                tableGameDataList.add(
+                            if (sg.getData().getSteamPriceOverview().getInitialPrice()
+                                > 0) {
+                                tableGameDataObservableList.add(
                                     new TableGameData(sg, steamCardExchangeGameData));
                             }
                         });
 
-                        steamGames.addAll(tableGameDataList);
+                        // sorting the list
+                        // - the first sorting factor is the rating, going from lowest to highest rating (the lower the rating the better)
+                        // - the second sorting factor is the number of cards, going from lowest to highest number, in case multiple games have the same rating
+                        // - the last sorting factor is the name, in case multiple games have the same rating and number of cards
+                        tableGameDataObservableList.setAll(tableGameDataObservableList
+                            .stream()
+                            .sorted(Comparator.comparing(TableGameData::getName))
+                            .sorted(Comparator.comparing(TableGameData::getCards))
+                            .sorted(Comparator.comparing(TableGameData::getRating))
+                            .collect(Collectors.toList())
+                        );
 
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 });
 
-                // sorting the list
-                steamGames.setAll(steamGames
-                    .stream()
-                    .sorted(Comparator.comparing(TableGameData::getName))
-                    .sorted(Comparator.comparing(TableGameData::getRating))
-                    .collect(Collectors.toList())
-                );
-
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-
-            return steamGames;
+            return null;
         }
     }
 }
