@@ -134,7 +134,7 @@
     <maven.compiler.target>${java.version}</maven.compiler.target>
     <javafx.current_version>11.0.2</javafx.current_version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <app.output.name>BSTCGF-${app.versionString}</app.output.name>
+    <app.output.name>BSTCGF</app.output.name>
     <junit.version>5.9.2</junit.version>
   </properties>
 </project>
