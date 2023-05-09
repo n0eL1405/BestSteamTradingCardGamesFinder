@@ -27,16 +27,7 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.SeparatorMenuItem;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -49,10 +40,16 @@ public class BstcgfController implements Initializable {
     public ProgressBar progressionBar;
 
     @FXML
-    VBox vBox;
+    private VBox vBoxMain;
 
     @FXML
-    HBox hBox;
+    private VBox vBoxTop;
+
+    @FXML
+    private HBox hBoxTopTop;
+
+    @FXML
+    private HBox hBoxTopBottom;
 
     @FXML
     SearchableComboBox<CountryCode> countryCodeSearchComboBox;
@@ -78,7 +75,10 @@ public class BstcgfController implements Initializable {
     @FXML
     private Button loadDataButton;
 
-    private ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
+    @FXML
+    private TextField searchTextField;
+
+    private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
