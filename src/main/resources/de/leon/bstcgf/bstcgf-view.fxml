@@ -21,7 +21,7 @@
                   </HBox.margin>
               </StackPane>
               <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
-                  <SearchableComboBox fx:id="countryCodeSearchComboBox" onAction="#searchComboAction"/>
+                  <SearchableComboBox fx:id="countryCodeSearchComboBox" onAction="#countryCodeSearchComboBoxAction"/>
                   <HBox.margin>
                       <Insets right="5.0"/>
                   </HBox.margin>

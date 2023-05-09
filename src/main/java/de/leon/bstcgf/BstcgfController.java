@@ -95,6 +95,24 @@ public class BstcgfController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
+        initUI();
+
+    }
+
+    private void initUI() {
+
+        initCountryCodeSearchComboBox();
+
+        initTable();
+
+        initProgressionBar();
+
+        initSearchField();
+
+    }
+
+    private void initCountryCodeSearchComboBox() {
+
         try {
             countryCodesObservableList.clear();
             countryCodesObservableList.addAll(Request.getSteamCountryCodes());
@@ -104,18 +122,34 @@ public class BstcgfController implements Initializable {
 
         selectedCountryCode = countryCodesObservableList.get(0);
 
-        initUI();
+        countryCodeSearchComboBox.setItems(countryCodesObservableList);
+        countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
+
+        Callback<ListView<CountryCode>, ListCell<CountryCode>> cellFactory = new Callback<>() {
+            @Override
+            public ListCell<CountryCode> call(ListView<CountryCode> countryCodeListView) {
+                return new ListCell<>() {
+                    @Override
+                    protected void updateItem(CountryCode countryCode, boolean empty) {
+                        super.updateItem(countryCode, empty);
+
+                        if (countryCode == null || empty) {
+                            setText(null);
+                        } else {
+                            setText(countryCode.getLabel());
+                        }
+                    }
+                };
+            }
+        };
+
+        countryCodeSearchComboBox.setButtonCell(cellFactory.call(null));
+        countryCodeSearchComboBox.setCellFactory(cellFactory);
 
     }
 
-    private void initUI() {
-
-        initDropDown();
-
-        initTable();
-
-        initProgressionBar();
-
+    public void countryCodeSearchComboBoxAction(ActionEvent actionEvent) {
+        selectedCountryCode = countryCodeSearchComboBox.getValue();
     }
 
     private void initTable() {
@@ -135,6 +169,77 @@ public class BstcgfController implements Initializable {
         tableGameDataTableView.setItems(tableGameDataObservableList);
     }
 
+    private class LoadGameDataFromSteamTask extends Task<Void> {
+
+        private final CountryCode countryCode;
+
+        private LoadGameDataFromSteamTask(CountryCode countryCode) {
+            this.countryCode = countryCode;
+        }
+
+        @Override
+        protected Void call() throws Exception {
+
+            try {
+
+                SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
+                AtomicReference<Integer> gamesCounter = new AtomicReference<>(0);
+
+                List<SteamCardExchangeGameData> steamCardExchangeGameDataList = new LinkedList<>(
+                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
+
+                steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
+
+                    try {
+
+                        SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
+                            packages.getOnlyIds(), countryCode);
+                        List<SteamGame> steamGameList = new LinkedList<>(
+                            steamJsonData.getSteamGames());
+
+                        steamGameList.forEach(sg -> {
+
+                            SteamCardExchangeGameData steamCardExchangeGameData = steamCardExchangeGameDataList.stream()
+                                .filter(scegd -> scegd.getId() == sg.getId())
+                                .findFirst().orElseThrow();
+
+                            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
+                            // using initial price should still add free2keep games in the list;
+                            if (sg.getData().getSteamPriceOverview().getInitialPrice()
+                                > 0) {
+                                tableGameDataObservableList.add(
+                                    new TableGameData(sg, steamCardExchangeGameData));
+                            }
+
+                            gamesCounter.set(gamesCounter.get() + 1);
+                            double progress = calcProgressDouble(gamesCounter.get(), steamCardExchangeGameDataList.size()); // geht nich
+                            progressionBar.setProgress(progress);
+                        });
+
+                        // sorting the list
+                        // - the first sorting factor is the rating, going from lowest to highest rating (the lower the rating the better)
+                        // - the second sorting factor is the number of cards, going from lowest to highest number, in case multiple games have the same rating
+                        // - the last sorting factor is the name, in case multiple games have the same rating and number of cards
+                        tableGameDataObservableList.setAll(tableGameDataObservableList
+                            .stream()
+                            .sorted(Comparator.comparing(TableGameData::getName))
+                            .sorted(Comparator.comparing(TableGameData::getCards))
+                            .sorted(Comparator.comparing(TableGameData::getRating))
+                            .collect(Collectors.toList())
+                        );
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        }
+    }
+
     public void clickAction(ActionEvent actionEvent) {
         //loadData();
         countryCodeSearchComboBox.setDisable(true);
@@ -152,53 +257,6 @@ public class BstcgfController implements Initializable {
         });
 
         executor.execute(loadGameDataFromSteamTask);
-    }
-
-    @Deprecated
-    private void loadData() {
-
-        tableGameDataObservableList.clear();
-        List<TableGameData> tableGameDataList = new LinkedList<>();
-        List<SteamCardExchangeGameData> steamCardExchangeGameDataList;
-        List<SteamGame> steamGameList = new LinkedList<>();
-
-        try {
-            SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
-            steamCardExchangeGameDataList = new LinkedList<>(
-                steamCardExchangeJsonData.getSteamCardExchangeGameData());
-            steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
-                try {
-                    SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                        packages.getOnlyIds(), selectedCountryCode);
-                    steamGameList.addAll(steamJsonData.getSteamGames());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        steamCardExchangeGameDataList.forEach(scegd -> {
-
-            SteamGame steamGame = steamGameList.stream().filter(sg -> sg.getId() == scegd.getId())
-                .findFirst().orElseThrow();
-
-            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
-            // using initial price should still add free2keep games in the list;
-            if (steamGame.getData().getSteamPriceOverview().getInitialPrice() > 0) {
-                TableGameData tableGameData = new TableGameData(steamGame, scegd);
-                tableGameDataList.add(tableGameData);
-            }
-        });
-
-        tableGameDataObservableList.addAll(tableGameDataList
-            .stream()
-            .sorted(Comparator.comparing(TableGameData::getName))
-            .sorted(Comparator.comparing(TableGameData::getRating))
-            .collect(Collectors.toList())
-        );
     }
 
     private void setCellValueFactories() {
@@ -307,34 +365,6 @@ public class BstcgfController implements Initializable {
         );
     }
 
-    private void initDropDown() {
-
-        countryCodeSearchComboBox.setItems(countryCodesObservableList);
-        countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
-
-        Callback<ListView<CountryCode>, ListCell<CountryCode>> cellFactory = new Callback<>() {
-            @Override
-            public ListCell<CountryCode> call(ListView<CountryCode> countryCodeListView) {
-                return new ListCell<>() {
-                    @Override
-                    protected void updateItem(CountryCode countryCode, boolean empty) {
-                        super.updateItem(countryCode, empty);
-
-                        if (countryCode == null || empty) {
-                            setText(null);
-                        } else {
-                            setText(countryCode.getLabel());
-                        }
-                    }
-                };
-            }
-        };
-
-        countryCodeSearchComboBox.setButtonCell(cellFactory.call(null));
-        countryCodeSearchComboBox.setCellFactory(cellFactory);
-
-    }
-
     private void initProgressionBar() {
 
         progressionBar.autosize();
@@ -343,6 +373,12 @@ public class BstcgfController implements Initializable {
 
     private Double calcProgressDouble(Integer currentProgress, Integer fullProgress) {
         return ((double) currentProgress) / ((double) fullProgress);
+    }
+
+    private void initSearchField() {
+
+
+
     }
 
     @Deprecated
@@ -357,78 +393,50 @@ public class BstcgfController implements Initializable {
         return matches;
     }
 
-    public void searchComboAction(ActionEvent actionEvent) {
-        selectedCountryCode = countryCodeSearchComboBox.getValue();
-    }
+    @Deprecated
+    private void loadData() {
 
-    private class LoadGameDataFromSteamTask extends Task<Void> {
+        tableGameDataObservableList.clear();
+        List<TableGameData> tableGameDataList = new LinkedList<>();
+        List<SteamCardExchangeGameData> steamCardExchangeGameDataList;
+        List<SteamGame> steamGameList = new LinkedList<>();
 
-        private final CountryCode countryCode;
+        try {
+            SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
+            steamCardExchangeGameDataList = new LinkedList<>(
+                steamCardExchangeJsonData.getSteamCardExchangeGameData());
+            steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
+                try {
+                    SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
+                        packages.getOnlyIds(), selectedCountryCode);
+                    steamGameList.addAll(steamJsonData.getSteamGames());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
-        private LoadGameDataFromSteamTask(CountryCode countryCode) {
-            this.countryCode = countryCode;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
-        @Override
-        protected Void call() throws Exception {
+        steamCardExchangeGameDataList.forEach(scegd -> {
 
-            try {
+            SteamGame steamGame = steamGameList.stream().filter(sg -> sg.getId() == scegd.getId())
+                .findFirst().orElseThrow();
 
-                SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
-                AtomicReference<Integer> gamesCounter = new AtomicReference<>(0);
-
-                List<SteamCardExchangeGameData> steamCardExchangeGameDataList = new LinkedList<>(
-                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
-
-                steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
-
-                    try {
-
-                        SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                            packages.getOnlyIds(), countryCode);
-                        List<SteamGame> steamGameList = new LinkedList<>(
-                            steamJsonData.getSteamGames());
-
-                        steamGameList.forEach(sg -> {
-
-                            SteamCardExchangeGameData steamCardExchangeGameData = steamCardExchangeGameDataList.stream()
-                                .filter(scegd -> scegd.getId() == sg.getId())
-                                .findFirst().orElseThrow();
-
-                            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
-                            // using initial price should still add free2keep games in the list;
-                            if (sg.getData().getSteamPriceOverview().getInitialPrice()
-                                > 0) {
-                                tableGameDataObservableList.add(
-                                    new TableGameData(sg, steamCardExchangeGameData));
-                            }
-
-                            gamesCounter.set(gamesCounter.get() + 1);
-                            double progress = calcProgressDouble(gamesCounter.get(), steamCardExchangeGameDataList.size()); // geht nich
-                            progressionBar.setProgress(progress);
-                        });
-
-                        // sorting the list
-                        // - the first sorting factor is the rating, going from lowest to highest rating (the lower the rating the better)
-                        // - the second sorting factor is the number of cards, going from lowest to highest number, in case multiple games have the same rating
-                        // - the last sorting factor is the name, in case multiple games have the same rating and number of cards
-                        tableGameDataObservableList.setAll(tableGameDataObservableList
-                            .stream()
-                            .sorted(Comparator.comparing(TableGameData::getName))
-                            .sorted(Comparator.comparing(TableGameData::getCards))
-                            .sorted(Comparator.comparing(TableGameData::getRating))
-                            .collect(Collectors.toList())
-                        );
-
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
+            // using initial price should still add free2keep games in the list;
+            if (steamGame.getData().getSteamPriceOverview().getInitialPrice() > 0) {
+                TableGameData tableGameData = new TableGameData(steamGame, scegd);
+                tableGameDataList.add(tableGameData);
             }
-            return null;
-        }
+        });
+
+        tableGameDataObservableList.addAll(tableGameDataList
+            .stream()
+            .sorted(Comparator.comparing(TableGameData::getName))
+            .sorted(Comparator.comparing(TableGameData::getRating))
+            .collect(Collectors.toList())
+        );
     }
 }
