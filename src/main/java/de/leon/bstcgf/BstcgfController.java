@@ -12,6 +12,7 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,10 +20,13 @@ import java.util.ResourceBundle;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -52,7 +56,7 @@ public class BstcgfController implements Initializable {
     private HBox hBoxTopBottom;
 
     @FXML
-    SearchableComboBox<CountryCode> countryCodeSearchComboBox;
+    private SearchableComboBox<CountryCode> countryCodeSearchComboBox;
 
     @FXML
     private TableView<TableGameData> tableGameDataTableView;
@@ -78,7 +82,11 @@ public class BstcgfController implements Initializable {
     @FXML
     private TextField searchTextField;
 
+    @FXML
+    private Button resetFilter;
+
     private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
+    private final FilteredList<TableGameData> filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
@@ -101,13 +109,13 @@ public class BstcgfController implements Initializable {
 
     private void initUI() {
 
+        initSearchField();
+
         initCountryCodeSearchComboBox();
 
         initTable();
 
         initProgressionBar();
-
-        initSearchField();
 
     }
 
@@ -166,7 +174,7 @@ public class BstcgfController implements Initializable {
         tableColumnRating.prefWidthProperty().bind(tableGameDataTableView.widthProperty().multiply(1/6));
          */
 
-        tableGameDataTableView.setItems(tableGameDataObservableList);
+        tableGameDataTableView.setItems(filteredTableGameDataList);
     }
 
     private class LoadGameDataFromSteamTask extends Task<Void> {
@@ -212,7 +220,8 @@ public class BstcgfController implements Initializable {
                             }
 
                             gamesCounter.set(gamesCounter.get() + 1);
-                            double progress = calcProgressDouble(gamesCounter.get(), steamCardExchangeGameDataList.size()); // geht nich
+                            double progress = calcProgressDouble(gamesCounter.get(),
+                                steamCardExchangeGameDataList.size());
                             progressionBar.setProgress(progress);
                         });
 
@@ -220,13 +229,11 @@ public class BstcgfController implements Initializable {
                         // - the first sorting factor is the rating, going from lowest to highest rating (the lower the rating the better)
                         // - the second sorting factor is the number of cards, going from lowest to highest number, in case multiple games have the same rating
                         // - the last sorting factor is the name, in case multiple games have the same rating and number of cards
-                        tableGameDataObservableList.setAll(tableGameDataObservableList
-                            .stream()
-                            .sorted(Comparator.comparing(TableGameData::getName))
-                            .sorted(Comparator.comparing(TableGameData::getCards))
-                            .sorted(Comparator.comparing(TableGameData::getRating))
-                            .collect(Collectors.toList())
-                        );
+                        Comparator<TableGameData> tableGameDataComparator = Comparator
+                            .comparing(TableGameData::getRating)
+                            .thenComparing(TableGameData::getCards)
+                            .thenComparing(TableGameData::getName);
+                        tableGameDataObservableList.sort(tableGameDataComparator);
 
                     } catch (IOException e) {
                         throw new RuntimeException(e);
@@ -240,20 +247,22 @@ public class BstcgfController implements Initializable {
         }
     }
 
-    public void clickAction(ActionEvent actionEvent) {
+    public void loadDataAction(ActionEvent actionEvent) {
         //loadData();
-        countryCodeSearchComboBox.setDisable(true);
+        deactivateWhileLoading();
+
+        tableGameDataObservableList.clear();
 
         LoadGameDataFromSteamTask loadGameDataFromSteamTask = new LoadGameDataFromSteamTask(
             selectedCountryCode);
 
         loadGameDataFromSteamTask.setOnSucceeded(wse -> {
-            countryCodeSearchComboBox.setDisable(false);
+            activateAfterLoading();
         });
 
         loadGameDataFromSteamTask.setOnFailed(wse -> {
             loadGameDataFromSteamTask.getException().printStackTrace();
-            countryCodeSearchComboBox.setDisable(false);
+            activateAfterLoading();
         });
 
         executor.execute(loadGameDataFromSteamTask);
@@ -377,8 +386,48 @@ public class BstcgfController implements Initializable {
 
     private void initSearchField() {
 
+        //filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
 
+        searchTextField.textProperty().addListener((observable, oldValue, newValue) -> {
 
+            if (!newValue.trim().isEmpty() || !newValue.trim().isBlank()) {
+
+                String searchFieldText = newValue.trim().toLowerCase();
+
+                Predicate<TableGameData> containsSearchText = item ->
+                    item.getName().toLowerCase().contains(searchFieldText)
+                        || item.getId().toString().toLowerCase().contains(searchFieldText)
+                        || item.getCardsString().toLowerCase().contains(searchFieldText)
+                        || item.getPrice().toLowerCase().contains(searchFieldText)
+                        || item.getRating().toString().toLowerCase().contains(searchFieldText);
+
+                filteredTableGameDataList.setPredicate(containsSearchText);
+
+            } else {
+
+                filteredTableGameDataList.setPredicate(null);
+
+            }
+        });
+    }
+
+    public void resetFilterAction(ActionEvent actionEvent) {
+        searchTextField.setText("");
+        filteredTableGameDataList.setPredicate(null);
+    }
+
+    private void deactivateWhileLoading() {
+        loadDataButton.setDisable(true);
+        countryCodeSearchComboBox.setDisable(true);
+        searchTextField.setDisable(true);
+        resetFilter.setDisable(true);
+    }
+
+    private void activateAfterLoading() {
+        loadDataButton.setDisable(false);
+        countryCodeSearchComboBox.setDisable(false);
+        searchTextField.setDisable(false);
+        resetFilter.setDisable(false);
     }
 
     @Deprecated

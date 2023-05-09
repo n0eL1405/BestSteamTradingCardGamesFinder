@@ -13,6 +13,7 @@ public class TableGameData {
     private final SimpleStringProperty name;
     private final SimpleIntegerProperty id;
     private int cards;
+    private int obtainableCards;
     private final SimpleStringProperty cardsString;
     private final SimpleStringProperty price;
     private final SimpleDoubleProperty rating;
@@ -21,24 +22,25 @@ public class TableGameData {
         this.name = new SimpleStringProperty(steamCardExchangeGameData.getName());
         this.id = new SimpleIntegerProperty(steamGame.getId());
         this.cards = steamCardExchangeGameData.getTradingCards();
+        this.obtainableCards = calcObtainableCards(cards);
         this.price = new SimpleStringProperty(
             steamGame.getData().getSteamPriceOverview().getFinalPriceFormatted());
         this.rating = new SimpleDoubleProperty(
             calcRating(steamGame.getData().getSteamPriceOverview().getFinalPrice(),
-                steamCardExchangeGameData.getTradingCards()));
+                obtainableCards));
 
         StringBuilder cardsStringBuilder = new StringBuilder()
             .append(steamCardExchangeGameData.getTradingCards())
             .append(" (")
-            .append(calcObtainableCards(steamCardExchangeGameData.getTradingCards()))
+            .append(this.obtainableCards)
             .append(")");
 
         this.cardsString = new SimpleStringProperty(cardsStringBuilder.toString());
 
     }
 
-    private Double calcRating(Integer price, Integer cards) {
-        return (double) price / calcObtainableCards(cards);
+    private Double calcRating(Integer price, Integer obtainableCards) {
+        return (double) price / cards;
     }
 
     private int calcObtainableCards(Integer cards) {
@@ -111,5 +113,13 @@ public class TableGameData {
 
     public void setRating(double rating) {
         this.rating.set(rating);
+    }
+
+    public Integer getObtainableCards() {
+        return obtainableCards;
+    }
+
+    public void setObtainableCards(int obtainableCards) {
+        this.obtainableCards = obtainableCards;
     }
 }
