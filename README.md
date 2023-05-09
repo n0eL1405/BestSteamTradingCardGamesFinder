@@ -13,7 +13,7 @@ A small Java programm to get all Steam games with Trading Cards sorted by a rati
 
 ## Why?
 I started using ASF and wanted to get the most cards for the least money spend. I stared comparing game by game but of course it's boring and takes long. 
-I couldn't find something like this online but there was nothing.
+I couldn't find something like this online, so I just did it myself.
 
 ---
 
@@ -24,26 +24,27 @@ Now with all IDs I can use [this Steam Web API request](https://github.com/Revad
    
 ### Rating
 As I said I wanted to get the most cards for the lowest game price. It is important to keep in mind that you won't get e.g. 5 out of 5 available Trading Cards, 
-you get half of the cards and I case of an odd number it rounds up (so if a game has 5 Trading Cards you can obtain 3 cards, in cas of 7 you will get 4 and so on).
-So to get the Rating I used the formula <code>current price / ((available cards / 2) rounded up)</code>. The lower the rating the better is the game to get Trading Cards.   
-The table is sorted by rating, going from lowest to highest (best to worst game) and, if multiple games have the same rating, by name.
+you get half of the cards and I case of an odd number it rounds up (so if a game has 5 Trading Cards you can obtain 3 cards, in case of 7 you will get 4 and so on).
+So to get the rating I use the formula <code>current price / ((available cards / 2) rounded up)</code>. The lower the rating the better is the game to get Trading Cards.   
+The table is sorted by rating, going from lowest to highest (best to worst game) and, if multiple games have the same rating, they are sorted by total number of cards for the game 
+(games with fewer cards are above games with more cards because it is easier to get badge). If there are multiple cards with the same rating and total number of cards, 
+they are sorted by name.
    
 ### For more details, check the code
    
 ---
    
 ## How to use
-Just start the programm, click <code>Load Games</code> and wait a little bit.   
+Just start the programm, click <code>Load Games</code> and watch as the games are loaded.   
    
 The Steam Web API request has a maximum off 200 requests per 5 minutes, right now the programm requires 111 requests 
-(there 11.075 Games with Trading Cards at the moment of writing this and each Steam Web API request can have up to 100 IDs). This means you can get the Data once every 5 minutes without getting blocked from the Steam Web API.
+(there 11.075 Games with Trading Cards at the moment of writing this and each Steam Web API request can have up to 100 IDs). This means you can get the data once every 5 minutes without getting blocked from the Steam Web API.
    
 Don't worry if you get blocked, just wait a few minutes (probably 5, but that's just a guess) or change your IP e.g. by using a VPN and try again.
-   
-Currently, EU is set as region for the prices, in the future it will be possible to change the price region.   
+
 If a game is Free2Play, it will be sorted out, because you have to spend ~10$ to get one card. 
 The method used for this will also sort out games that are unavailable in your region (because the Steam API will not return price information for those games). 
-I believe the blocking depends on your IP address and not on the used country code (as I said it's EU at the moment), but I'm not sure about that.
+I believe the blocking depends on your IP address and not on the used country code, but I'm not sure about that.
    
 ---
    
