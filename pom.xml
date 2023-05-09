@@ -14,7 +14,7 @@
     <java.version>11</java.version>
     <app.version>1.3.0</app.version>
     <app.versionString>v${app.version}</app.versionString>
-    <app.output.name>BSTCGF-${app.versionString}</app.output.name>
+    <app.output.name>BSTCGF</app.output.name>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
