@@ -29,7 +29,6 @@ public class SteamCardExchangeJsonData {
                 .name((String) gameDataArray.get(1))
                 .tradingCards((Integer) gameArray.get(1))
                 .valueOfAllCards((String) gameArray.get(2))
-                .unknown((String) gameArray.get(3))
                 .build();
 
             steamCardExchangeGameDataList.add(steamCardExchangeGameData);
