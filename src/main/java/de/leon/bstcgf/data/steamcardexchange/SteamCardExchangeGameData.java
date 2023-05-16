@@ -17,9 +17,8 @@ public class SteamCardExchangeGameData {
     @NonNull
     private final int tradingCards;
     private final String valueOfAllCards;
-    private final String unknown;
 
     public SteamCardExchangeGameData(int id, String name, int tradingCards) {
-        this(id, name, tradingCards, null, null);
+        this(id, name, tradingCards, null);
     }
 }
