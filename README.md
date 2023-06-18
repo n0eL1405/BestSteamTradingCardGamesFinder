@@ -31,9 +31,9 @@ The table is sorted by rating, going from lowest to highest (best to worst game)
 they are sorted by name.
    
 ### For more details, check the code
-   
+
 ---
-   
+
 ## How to use
 Just start the programm, click <code>Load Games</code> and watch as the games are loaded.   
    
@@ -45,7 +45,20 @@ Don't worry if you get blocked, just wait a few minutes (probably 5, but that's 
 If a game is Free2Play, it will be sorted out, because you have to spend ~10$ to get one card. 
 The method used for this will also sort out games that are unavailable in your region (because the Steam API will not return price information for those games). 
 I believe the blocking depends on your IP address and not on the used country code, but I'm not sure about that.
-   
+
 ---
-   
+
+## The branches
+
+### [dev](https://github.com/n0eL1405/BestSteamTradingCardGamesFinder/tree/dev)
+Always the latest state of the code. Whenever I stop coding, I will push the code to this branch. The code may or may not work.
+
+### [master](https://github.com/n0eL1405/BestSteamTradingCardGamesFinder/tree/master)
+This code is always buildable and runnable. The features in this branch are all working, and you could compile and use the programm from this branch without any problems (except hidden bugs). But there may be features that are useless, because other features are still in development.
+
+### [release](https://github.com/n0eL1405/BestSteamTradingCardGamesFinder/tree/release/v1.0)
+All branches in this folder represent a release version of the programm. If you want to check the code of a specific version, you can do it there. Once a branch is created in the folder, it will never be changed (except I find some critical stuff that really shouldn't be public in these branches).
+
+---
+
 ### Developed in Java 17, downgraded to Java 11. Currently only tested with Windows 11.
