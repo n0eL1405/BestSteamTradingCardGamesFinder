@@ -33,7 +33,7 @@ public class BstcgfApplication extends Application {
 
         FXMLLoader fxmlLoader = new FXMLLoader();
         fxmlLoader.setLocation(BstcgfApplication.class.getResource("bstcgf-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 640, 480);
+        Scene scene = new Scene(fxmlLoader.load(), 780, 480);
         stage.setTitle("Best Steam Trading Card Games Finder");
         stage.setScene(scene);
         stage.show();

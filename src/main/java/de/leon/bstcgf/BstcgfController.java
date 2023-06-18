@@ -6,6 +6,7 @@ import de.leon.bstcgf.data.steam.SteamGame;
 import de.leon.bstcgf.data.steam.SteamJsonData;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeGameData;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeJsonData;
+
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
@@ -78,6 +80,9 @@ public class BstcgfController implements Initializable {
     private TableColumn<TableGameData, Double> tableColumnRating;
 
     @FXML
+    private TableColumn<TableGameData, Double> tableColumnStatus;
+
+    @FXML
     private Button loadDataButton;
 
     @FXML
@@ -131,15 +136,14 @@ public class BstcgfController implements Initializable {
             throw new RuntimeException(e);
         }
 
-        selectedCountryCode = countryCodesObservableList.get(0);
-
         countryCodeSearchComboBox.setItems(countryCodesObservableList);
 
         try {
-            CountryCode countryCode = CountryCode.fromJSONObject(settings.read(Settings.Setting.REGION));
-            countryCodeSearchComboBox.setValue(countryCode);
+            selectedCountryCode = CountryCode.fromJSONObject(settings.read(Settings.Setting.REGION));
+            countryCodeSearchComboBox.setValue(selectedCountryCode);
         } catch (NullPointerException npe) {
             countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
+            selectedCountryCode = countryCodesObservableList.get(0);
         }
 
         Callback<ListView<CountryCode>, ListCell<CountryCode>> cellFactory = new Callback<>() {
@@ -204,34 +208,34 @@ public class BstcgfController implements Initializable {
                 AtomicReference<Integer> gamesCounter = new AtomicReference<>(0);
 
                 List<SteamCardExchangeGameData> steamCardExchangeGameDataList = new LinkedList<>(
-                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
+                        steamCardExchangeJsonData.getSteamCardExchangeGameData());
 
                 steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
 
                     try {
 
                         SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                            packages.getOnlyIds(), countryCode);
+                                packages.getOnlyIds(), countryCode);
                         List<SteamGame> steamGameList = new LinkedList<>(
-                            steamJsonData.getSteamGames());
+                                steamJsonData.getSteamGames());
 
                         steamGameList.forEach(sg -> {
 
                             SteamCardExchangeGameData steamCardExchangeGameData = steamCardExchangeGameDataList.stream()
-                                .filter(scegd -> scegd.getId() == sg.getId())
-                                .findFirst().orElseThrow();
+                                    .filter(scegd -> scegd.getId() == sg.getId())
+                                    .findFirst().orElseThrow();
 
                             // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
                             // using initial price should still add free2keep games in the list;
                             if (sg.getData().getSteamPriceOverview().getInitialPrice()
-                                > 0) {
+                                    > 0) {
                                 tableGameDataObservableList.add(
-                                    new TableGameData(sg, steamCardExchangeGameData));
+                                        new TableGameData(sg, steamCardExchangeGameData));
                             }
 
                             gamesCounter.set(gamesCounter.get() + 1);
                             double progress = calcProgressDouble(gamesCounter.get(),
-                                steamCardExchangeGameDataList.size());
+                                    steamCardExchangeGameDataList.size());
                             progressionBar.setProgress(progress);
                         });
 
@@ -240,9 +244,9 @@ public class BstcgfController implements Initializable {
                         // - the second sorting factor is the number of cards, going from lowest to highest number, in case multiple games have the same rating
                         // - the last sorting factor is the name, in case multiple games have the same rating and number of cards
                         Comparator<TableGameData> tableGameDataComparator = Comparator
-                            .comparing(TableGameData::getRating)
-                            .thenComparing(TableGameData::getCards)
-                            .thenComparing(TableGameData::getName);
+                                .comparing(TableGameData::getRating)
+                                .thenComparing(TableGameData::getCards)
+                                .thenComparing(TableGameData::getName);
                         tableGameDataObservableList.sort(tableGameDataComparator);
 
                     } catch (IOException e) {
@@ -264,7 +268,7 @@ public class BstcgfController implements Initializable {
         tableGameDataObservableList.clear();
 
         LoadGameDataFromSteamTask loadGameDataFromSteamTask = new LoadGameDataFromSteamTask(
-            selectedCountryCode);
+                selectedCountryCode);
 
         loadGameDataFromSteamTask.setOnSucceeded(wse -> {
             activateAfterLoading();
@@ -281,23 +285,27 @@ public class BstcgfController implements Initializable {
     private void setCellValueFactories() {
 
         tableColumnName.setCellValueFactory(
-            new PropertyValueFactory<>("name")
+                new PropertyValueFactory<>("name")
         );
 
         tableColumnId.setCellValueFactory(
-            new PropertyValueFactory<>("id")
+                new PropertyValueFactory<>("id")
         );
 
         tableColumnCards.setCellValueFactory(
-            new PropertyValueFactory<>("cardsString")
+                new PropertyValueFactory<>("cardsString")
         );
 
         tableColumnPrice.setCellValueFactory(
-            new PropertyValueFactory<>("price")
+                new PropertyValueFactory<>("price")
         );
 
         tableColumnRating.setCellValueFactory(
-            new PropertyValueFactory<>("rating")
+                new PropertyValueFactory<>("rating")
+        );
+
+        tableColumnStatus.setCellValueFactory(
+                new PropertyValueFactory<>("status")
         );
     }
 
@@ -305,82 +313,131 @@ public class BstcgfController implements Initializable {
 
         tableGameDataTableView.setRowFactory(tableGameDataTableView -> {
 
-                final TableRow<TableGameData> row = new TableRow<>();
-                final ContextMenu contextMenu = new ContextMenu();
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                    final TableRow<TableGameData> row = new TableRow<>();
+                    final ContextMenu contextMenu = new ContextMenu();
+                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
-                MenuItem copyName = new MenuItem("Copy Name");
-                MenuItem copyID = new MenuItem("Copy ID");
-                MenuItem copyCards = new MenuItem("Copy Cards");
-                MenuItem copyPrice = new MenuItem("Copy Price");
-                MenuItem copyRating = new MenuItem("Copy Rating");
-                MenuItem copySteamShopLink = new MenuItem("Copy Steam Shop Link");
-                MenuItem copySteamDbLink = new MenuItem("Copy SteamDB Link");
+                    MenuItem copyName = new MenuItem("Copy Name");
+                    MenuItem copyID = new MenuItem("Copy ID");
+                    MenuItem copyCards = new MenuItem("Copy Cards");
+                    MenuItem copyPrice = new MenuItem("Copy Price");
+                    MenuItem copyRating = new MenuItem("Copy Rating");
 
-                SeparatorMenuItem separatorMenuItem = new SeparatorMenuItem();
+                    MenuItem copySteamShopLink = new MenuItem("Copy Steam Shop Link");
+                    MenuItem copySteamDbLink = new MenuItem("Copy SteamDB Link");
 
-                copyName.setOnAction(actionEvent -> clipboard.setContents(
-                    new StringSelection(
-                        row.isEmpty() ? "" : row.getItem().getName()
-                    ), null));
+                    MenuItem setStatusPurchased = new MenuItem("Set Status \"Purchased\"");
+                    MenuItem setStatusWishlisted = new MenuItem("Set Status \"Wishlisted\"");
+                    MenuItem setStatusIgnored = new MenuItem("Set Status \"Ignored\"");
+                    MenuItem setStatusNone = new MenuItem("Set Status \"None\"");
 
-                copyID.setOnAction(actionEvent -> clipboard.setContents(
-                    new StringSelection(
-                        row.isEmpty() ? "" : row.getItem().getId().toString()
-                    ), null));
+                    copyName.setOnAction(actionEvent -> clipboard.setContents(
+                            new StringSelection(
+                                    row.isEmpty() ? "" : row.getItem().getName()
+                            ), null));
 
-                copyCards.setOnAction(actionEvent -> clipboard.setContents(
-                    new StringSelection(
-                        row.isEmpty() ? "" : row.getItem().getCardsString()
-                    ), null
-                ));
+                    copyID.setOnAction(actionEvent -> clipboard.setContents(
+                            new StringSelection(
+                                    row.isEmpty() ? "" : row.getItem().getId().toString()
+                            ), null));
 
-                copyPrice.setOnAction(actionEvent -> clipboard.setContents(
-                    new StringSelection(
-                        row.isEmpty() ? "" : row.getItem().getPrice()
-                    ), null
-                ));
+                    copyCards.setOnAction(actionEvent -> clipboard.setContents(
+                            new StringSelection(
+                                    row.isEmpty() ? "" : row.getItem().getCardsString()
+                            ), null
+                    ));
 
-                copyRating.setOnAction(actionEvent -> clipboard.setContents(
-                    new StringSelection(
-                        row.isEmpty() ? "" : row.getItem().getRating().toString()
-                    ), null
-                ));
+                    copyPrice.setOnAction(actionEvent -> clipboard.setContents(
+                            new StringSelection(
+                                    row.isEmpty() ? "" : row.getItem().getPrice()
+                            ), null
+                    ));
 
-                copySteamShopLink.setOnAction(actionEvent -> {
-                    StringBuilder stringBuilder = new StringBuilder()
-                        .append(STEAM_STORE_URL);
+                    copyRating.setOnAction(actionEvent -> clipboard.setContents(
+                            new StringSelection(
+                                    row.isEmpty() ? "" : row.getItem().getRating().toString()
+                            ), null
+                    ));
 
-                    clipboard.setContents(
-                        new StringSelection(
-                            row.isEmpty() ? "" : stringBuilder.append(row.getItem().getId()).toString()
-                        ), null
+                    copySteamShopLink.setOnAction(actionEvent -> {
+                        StringBuilder stringBuilder = new StringBuilder()
+                                .append(STEAM_STORE_URL);
+
+                        clipboard.setContents(
+                                new StringSelection(
+                                        row.isEmpty() ? "" : stringBuilder.append(row.getItem().getId()).toString()
+                                ), null
+                        );
+                    });
+
+                    copySteamDbLink.setOnAction(actionEvent -> {
+                        StringBuilder stringBuilder = new StringBuilder()
+                                .append(STEAMDB_URL);
+
+                        clipboard.setContents(
+                                new StringSelection(
+                                        row.isEmpty() ? "" : stringBuilder.append(row.getItem().getId()).toString()
+                                ), null
+                        );
+                    });
+
+                    setStatusPurchased.setOnAction(actionEvent -> {
+                        if (!row.isEmpty()) {
+                            row.getItem().setStatus(SteamGame.Status.PURCHASED.toString());
+                            tableGameDataObservableList.stream()
+                                    .filter(sg -> sg.equals(row.getItem()))
+                                    .findFirst()
+                                    .get()
+                                    .setStatus(SteamGame.Status.PURCHASED.toString());
+                        }
+                    });
+
+                    setStatusWishlisted.setOnAction(actionEvent -> {
+                        if (!row.isEmpty()) {
+                            row.getItem().setStatus(SteamGame.Status.WISHLISTED.toString());
+                            tableGameDataObservableList.stream()
+                                    .filter(sg -> sg.equals(row.getItem()))
+                                    .findFirst()
+                                    .get()
+                                    .setStatus(SteamGame.Status.WISHLISTED.toString());
+                        }
+                    });
+
+                    setStatusIgnored.setOnAction(actionEvent -> {
+                        if (!row.isEmpty()) {
+                            row.getItem().setStatus(SteamGame.Status.IGNORED.toString());
+                            tableGameDataObservableList.stream()
+                                    .filter(sg -> sg.equals(row.getItem()))
+                                    .findFirst()
+                                    .get()
+                                    .setStatus(SteamGame.Status.IGNORED.toString());
+                        }
+                    });
+
+                    setStatusNone.setOnAction(actionEvent -> {
+                        if (!row.isEmpty()) {
+                            row.getItem().setStatus(SteamGame.Status.NONE.toString());
+                            tableGameDataObservableList.stream()
+                                    .filter(sg -> sg.equals(row.getItem()))
+                                    .findFirst()
+                                    .get()
+                                    .setStatus(SteamGame.Status.NONE.toString());
+                        }
+                    });
+
+                    contextMenu.getItems()
+                            .addAll(copyName, copyID, copyCards, copyPrice, copyRating,
+                                    new SeparatorMenuItem() , copySteamShopLink, copySteamDbLink,
+                                    new SeparatorMenuItem(), setStatusPurchased, setStatusWishlisted, setStatusIgnored, setStatusNone);
+
+                    row.contextMenuProperty().bind(
+                            Bindings.when(row.emptyProperty())
+                                    .then((ContextMenu) null)
+                                    .otherwise(contextMenu)
                     );
-                });
 
-                copySteamDbLink.setOnAction(actionEvent -> {
-                    StringBuilder stringBuilder = new StringBuilder()
-                        .append(STEAMDB_URL);
-
-                    clipboard.setContents(
-                        new StringSelection(
-                            row.isEmpty() ? "" : stringBuilder.append(row.getItem().getId()).toString()
-                        ), null
-                    );
-                });
-
-                contextMenu.getItems()
-                    .addAll(copyName, copyID, copyCards, copyPrice, copyRating,
-                        separatorMenuItem, copySteamShopLink, copySteamDbLink);
-
-                row.contextMenuProperty().bind(
-                    Bindings.when(row.emptyProperty())
-                        .then((ContextMenu) null)
-                        .otherwise(contextMenu)
-                );
-
-                return row;
-            }
+                    return row;
+                }
         );
     }
 
@@ -405,11 +462,11 @@ public class BstcgfController implements Initializable {
                 String searchFieldText = newValue.trim().toLowerCase();
 
                 Predicate<TableGameData> containsSearchText = item ->
-                    item.getName().toLowerCase().contains(searchFieldText)
-                        || item.getId().toString().toLowerCase().contains(searchFieldText)
-                        || item.getCardsString().toLowerCase().contains(searchFieldText)
-                        || item.getPrice().toLowerCase().contains(searchFieldText)
-                        || item.getRating().toString().toLowerCase().contains(searchFieldText);
+                        item.getName().toLowerCase().contains(searchFieldText)
+                                || item.getId().toString().toLowerCase().contains(searchFieldText)
+                                || item.getCardsString().toLowerCase().contains(searchFieldText)
+                                || item.getPrice().toLowerCase().contains(searchFieldText)
+                                || item.getRating().toString().toLowerCase().contains(searchFieldText);
 
                 filteredTableGameDataList.setPredicate(containsSearchText);
 
@@ -431,6 +488,7 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(true);
         searchTextField.setDisable(true);
         resetFilter.setDisable(true);
+        tableGameDataTableView.setRowFactory(null); // removes the right click context menu from the rows
     }
 
     private void activateAfterLoading() {
@@ -438,6 +496,7 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(false);
         searchTextField.setDisable(false);
         resetFilter.setDisable(false);
+        createContextMenu(); // *should* add the right click context menu back (todo does not work)
     }
 
     @Deprecated
@@ -445,7 +504,7 @@ public class BstcgfController implements Initializable {
         List<CountryCode> matches = new ArrayList<>();
         allItems.forEach(cc -> {
             if (cc.getCode().toLowerCase().contains(searchTerm.toLowerCase())
-                || cc.getLabel().toLowerCase().contains(searchTerm.toLowerCase())) {
+                    || cc.getLabel().toLowerCase().contains(searchTerm.toLowerCase())) {
                 matches.add(cc);
             }
         });
@@ -463,11 +522,11 @@ public class BstcgfController implements Initializable {
         try {
             SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
             steamCardExchangeGameDataList = new LinkedList<>(
-                steamCardExchangeJsonData.getSteamCardExchangeGameData());
+                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
             steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
                 try {
                     SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                        packages.getOnlyIds(), selectedCountryCode);
+                            packages.getOnlyIds(), selectedCountryCode);
                     steamGameList.addAll(steamJsonData.getSteamGames());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -481,7 +540,7 @@ public class BstcgfController implements Initializable {
         steamCardExchangeGameDataList.forEach(scegd -> {
 
             SteamGame steamGame = steamGameList.stream().filter(sg -> sg.getId() == scegd.getId())
-                .findFirst().orElseThrow();
+                    .findFirst().orElseThrow();
 
             // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
             // using initial price should still add free2keep games in the list;
@@ -492,10 +551,10 @@ public class BstcgfController implements Initializable {
         });
 
         tableGameDataObservableList.addAll(tableGameDataList
-            .stream()
-            .sorted(Comparator.comparing(TableGameData::getName))
-            .sorted(Comparator.comparing(TableGameData::getRating))
-            .collect(Collectors.toList())
+                .stream()
+                .sorted(Comparator.comparing(TableGameData::getName))
+                .sorted(Comparator.comparing(TableGameData::getRating))
+                .collect(Collectors.toList())
         );
     }
 }

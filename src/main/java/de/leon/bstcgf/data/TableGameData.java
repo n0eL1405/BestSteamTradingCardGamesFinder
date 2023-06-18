@@ -17,6 +17,7 @@ public class TableGameData {
     private final SimpleStringProperty cardsString;
     private final SimpleStringProperty price;
     private final SimpleDoubleProperty rating;
+    private final SimpleStringProperty status;
 
     public TableGameData(SteamGame steamGame, SteamCardExchangeGameData steamCardExchangeGameData) {
         this.name = new SimpleStringProperty(steamCardExchangeGameData.getName());
@@ -28,6 +29,7 @@ public class TableGameData {
         this.rating = new SimpleDoubleProperty(
             calcRating(steamGame.getData().getSteamPriceOverview().getFinalPrice(),
                 obtainableCards));
+        this.status = new SimpleStringProperty(steamGame.getStatus().toString());
 
         StringBuilder cardsStringBuilder = new StringBuilder()
             .append(steamCardExchangeGameData.getTradingCards())
@@ -121,5 +123,17 @@ public class TableGameData {
 
     public void setObtainableCards(int obtainableCards) {
         this.obtainableCards = obtainableCards;
+    }
+
+    public String getStatus() {
+        return status.get();
+    }
+
+    public SimpleStringProperty statusProperty() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status.set(status);
     }
 }
