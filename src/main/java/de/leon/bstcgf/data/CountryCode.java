@@ -20,6 +20,14 @@ public class CountryCode {
         );
     }
 
+    public JSONObject toJSONObject() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put(Key.CODE.toString(), code);
+        jsonObject.put(Key.LABEL.toString(), label);
+
+        return jsonObject;
+    }
+
     public enum Key {
         COUNTRIES,
         CODE,

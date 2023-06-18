@@ -37,6 +37,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import org.controlsfx.control.SearchableComboBox;
+import org.json.JSONObject;
 
 public class BstcgfController implements Initializable {
 
@@ -94,6 +95,8 @@ public class BstcgfController implements Initializable {
 
     private CountryCode selectedCountryCode;
 
+    Settings settings = new Settings("settings_Main");
+
     private final Executor executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "controller-thread");
         t.setDaemon(true);
@@ -131,7 +134,13 @@ public class BstcgfController implements Initializable {
         selectedCountryCode = countryCodesObservableList.get(0);
 
         countryCodeSearchComboBox.setItems(countryCodesObservableList);
-        countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
+
+        try {
+            CountryCode countryCode = CountryCode.fromJSONObject(settings.read(Settings.Setting.REGION));
+            countryCodeSearchComboBox.setValue(countryCode);
+        } catch (NullPointerException npe) {
+            countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
+        }
 
         Callback<ListView<CountryCode>, ListCell<CountryCode>> cellFactory = new Callback<>() {
             @Override
@@ -145,6 +154,7 @@ public class BstcgfController implements Initializable {
                             setText(null);
                         } else {
                             setText(countryCode.getLabel());
+                            settings.save(Settings.Setting.REGION, countryCode.toJSONObject());
                         }
                     }
                 };

@@ -35,4 +35,6 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store
+
+### OTHER ###
+/settings_Main.json
