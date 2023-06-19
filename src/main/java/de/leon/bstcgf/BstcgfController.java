@@ -13,7 +13,6 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -39,7 +37,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import org.controlsfx.control.SearchableComboBox;
-import org.json.JSONObject;
 
 public class BstcgfController implements Initializable {
 
@@ -139,7 +136,7 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setItems(countryCodesObservableList);
 
         try {
-            selectedCountryCode = CountryCode.fromJSONObject(settings.read(Settings.Setting.REGION));
+            selectedCountryCode = settings.getCountryCode();
             countryCodeSearchComboBox.setValue(selectedCountryCode);
         } catch (NullPointerException npe) {
             countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
@@ -158,7 +155,7 @@ public class BstcgfController implements Initializable {
                             setText(null);
                         } else {
                             setText(countryCode.getLabel());
-                            settings.save(Settings.Setting.REGION, countryCode.toJSONObject());
+                            settings.saveCountryCode(countryCode);
                         }
                     }
                 };
@@ -230,7 +227,7 @@ public class BstcgfController implements Initializable {
                             if (sg.getData().getSteamPriceOverview().getInitialPrice()
                                     > 0) {
                                 tableGameDataObservableList.add(
-                                        new TableGameData(sg, steamCardExchangeGameData));
+                                        new TableGameData(sg, steamCardExchangeGameData, settings.getStatusByGameId(sg.getId())));
                             }
 
                             gamesCounter.set(gamesCounter.get() + 1);
@@ -311,7 +308,7 @@ public class BstcgfController implements Initializable {
 
     private void createContextMenu() {
 
-        tableGameDataTableView.setRowFactory(tableGameDataTableView -> {
+       tableGameDataTableView.setRowFactory(tableGameDataTableView -> {
 
                     final TableRow<TableGameData> row = new TableRow<>();
                     final ContextMenu contextMenu = new ContextMenu();
@@ -383,46 +380,46 @@ public class BstcgfController implements Initializable {
 
                     setStatusPurchased.setOnAction(actionEvent -> {
                         if (!row.isEmpty()) {
-                            row.getItem().setStatus(SteamGame.Status.PURCHASED.toString());
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
                                     .get()
-                                    .setStatus(SteamGame.Status.PURCHASED.toString());
+                                    .setStatus(TableGameData.Status.PURCHASED.toString());
                         }
+                        settings.saveGameIdByStatus(TableGameData.Status.PURCHASED, row.getItem());
                     });
 
                     setStatusWishlisted.setOnAction(actionEvent -> {
                         if (!row.isEmpty()) {
-                            row.getItem().setStatus(SteamGame.Status.WISHLISTED.toString());
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
                                     .get()
-                                    .setStatus(SteamGame.Status.WISHLISTED.toString());
+                                    .setStatus(TableGameData.Status.WISHLISTED.toString());
                         }
+                        settings.saveGameIdByStatus(TableGameData.Status.WISHLISTED, row.getItem());
                     });
 
                     setStatusIgnored.setOnAction(actionEvent -> {
                         if (!row.isEmpty()) {
-                            row.getItem().setStatus(SteamGame.Status.IGNORED.toString());
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
                                     .get()
-                                    .setStatus(SteamGame.Status.IGNORED.toString());
+                                    .setStatus(TableGameData.Status.IGNORED.toString());
                         }
+                        settings.saveGameIdByStatus(TableGameData.Status.IGNORED, row.getItem());
                     });
 
                     setStatusNone.setOnAction(actionEvent -> {
                         if (!row.isEmpty()) {
-                            row.getItem().setStatus(SteamGame.Status.NONE.toString());
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
                                     .get()
-                                    .setStatus(SteamGame.Status.NONE.toString());
+                                    .setStatus(TableGameData.Status.NONE.toString());
                         }
+                        settings.saveGameIdByStatus(TableGameData.Status.NONE, row.getItem());
                     });
 
                     contextMenu.getItems()
@@ -488,7 +485,7 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(true);
         searchTextField.setDisable(true);
         resetFilter.setDisable(true);
-        tableGameDataTableView.setRowFactory(null); // removes the right click context menu from the rows
+        //tableGameDataTableView.setRowFactory(null); // removes the right click context menu from the rows
     }
 
     private void activateAfterLoading() {
@@ -496,65 +493,6 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(false);
         searchTextField.setDisable(false);
         resetFilter.setDisable(false);
-        createContextMenu(); // *should* add the right click context menu back (todo does not work)
-    }
-
-    @Deprecated
-    private List<CountryCode> matchingItems(List<CountryCode> allItems, String searchTerm) {
-        List<CountryCode> matches = new ArrayList<>();
-        allItems.forEach(cc -> {
-            if (cc.getCode().toLowerCase().contains(searchTerm.toLowerCase())
-                    || cc.getLabel().toLowerCase().contains(searchTerm.toLowerCase())) {
-                matches.add(cc);
-            }
-        });
-        return matches;
-    }
-
-    @Deprecated
-    private void loadData() {
-
-        tableGameDataObservableList.clear();
-        List<TableGameData> tableGameDataList = new LinkedList<>();
-        List<SteamCardExchangeGameData> steamCardExchangeGameDataList;
-        List<SteamGame> steamGameList = new LinkedList<>();
-
-        try {
-            SteamCardExchangeJsonData steamCardExchangeJsonData = Request.getSteamCardExchangeData();
-            steamCardExchangeGameDataList = new LinkedList<>(
-                    steamCardExchangeJsonData.getSteamCardExchangeGameData());
-            steamCardExchangeJsonData.getInPackages(100).forEach(packages -> {
-                try {
-                    SteamJsonData steamJsonData = Request.getGameDataFromSteamIds(
-                            packages.getOnlyIds(), selectedCountryCode);
-                    steamGameList.addAll(steamJsonData.getSteamGames());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        steamCardExchangeGameDataList.forEach(scegd -> {
-
-            SteamGame steamGame = steamGameList.stream().filter(sg -> sg.getId() == scegd.getId())
-                    .findFirst().orElseThrow();
-
-            // skip if a game is free2play because you can only obtain 1 cord for ~10$ spend;
-            // using initial price should still add free2keep games in the list;
-            if (steamGame.getData().getSteamPriceOverview().getInitialPrice() > 0) {
-                TableGameData tableGameData = new TableGameData(steamGame, scegd);
-                tableGameDataList.add(tableGameData);
-            }
-        });
-
-        tableGameDataObservableList.addAll(tableGameDataList
-                .stream()
-                .sorted(Comparator.comparing(TableGameData::getName))
-                .sorted(Comparator.comparing(TableGameData::getRating))
-                .collect(Collectors.toList())
-        );
+        //createContextMenu(); // *should* add the right click context menu back (todo does not work)
     }
 }

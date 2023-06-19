@@ -14,17 +14,11 @@ public class SteamGame {
     private int id;
     private boolean success;
     private SteamGameData data;
-    private Status status;
 
     public SteamGame(int id, boolean success, SteamGameData data) {
-        this(id, success, data, Status.NONE);
-    }
-
-    public SteamGame(int id, boolean success, SteamGameData data, Status status) {
         this.id = id;
         this.success = success;
         this.data = data;
-        this.status = Objects.requireNonNullElse(status, Status.NONE);
     }
 
     public enum Key {
@@ -42,12 +36,5 @@ public class SteamGame {
             }
             return null;
         }
-    }
-
-    public enum Status {
-        PURCHASED,
-        WISHLISTED,
-        IGNORED,
-        NONE;
     }
 }

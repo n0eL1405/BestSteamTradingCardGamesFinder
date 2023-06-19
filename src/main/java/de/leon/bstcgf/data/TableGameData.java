@@ -1,5 +1,6 @@
 package de.leon.bstcgf.data;
 
+import de.leon.bstcgf.Settings;
 import de.leon.bstcgf.data.steam.SteamGame;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeGameData;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -19,7 +20,7 @@ public class TableGameData {
     private final SimpleDoubleProperty rating;
     private final SimpleStringProperty status;
 
-    public TableGameData(SteamGame steamGame, SteamCardExchangeGameData steamCardExchangeGameData) {
+    public TableGameData(SteamGame steamGame, SteamCardExchangeGameData steamCardExchangeGameData, Status status) {
         this.name = new SimpleStringProperty(steamCardExchangeGameData.getName());
         this.id = new SimpleIntegerProperty(steamGame.getId());
         this.cards = steamCardExchangeGameData.getTradingCards();
@@ -29,7 +30,7 @@ public class TableGameData {
         this.rating = new SimpleDoubleProperty(
             calcRating(steamGame.getData().getSteamPriceOverview().getFinalPrice(),
                 obtainableCards));
-        this.status = new SimpleStringProperty(steamGame.getStatus().toString());
+        this.status = new SimpleStringProperty(status.toString());
 
         StringBuilder cardsStringBuilder = new StringBuilder()
             .append(steamCardExchangeGameData.getTradingCards())
@@ -135,5 +136,12 @@ public class TableGameData {
 
     public void setStatus(String status) {
         this.status.set(status);
+    }
+
+    public enum Status {
+        PURCHASED,
+        WISHLISTED,
+        IGNORED,
+        NONE;
     }
 }
