@@ -29,12 +29,14 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import org.controlsfx.control.SearchableComboBox;
 
@@ -308,7 +310,7 @@ public class BstcgfController implements Initializable {
 
     private void createContextMenu() {
 
-       tableGameDataTableView.setRowFactory(tableGameDataTableView -> {
+        tableGameDataTableView.setRowFactory(tableGameDataTableView -> {
 
                     final TableRow<TableGameData> row = new TableRow<>();
                     final ContextMenu contextMenu = new ContextMenu();
@@ -327,6 +329,16 @@ public class BstcgfController implements Initializable {
                     MenuItem setStatusWishlisted = new MenuItem("Set Status \"Wishlisted\"");
                     MenuItem setStatusIgnored = new MenuItem("Set Status \"Ignored\"");
                     MenuItem setStatusNone = new MenuItem("Set Status \"None\"");
+
+                    contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
+                        @Override
+                        public void handle(WindowEvent event) {
+                            setStatusPurchased.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.PURCHASED.toString()));
+                            setStatusWishlisted.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.WISHLISTED.toString()));
+                            setStatusIgnored.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.IGNORED.toString()));
+                            setStatusNone.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.NONE.toString()));
+                        }
+                    });
 
                     copyName.setOnAction(actionEvent -> clipboard.setContents(
                             new StringSelection(
@@ -424,7 +436,7 @@ public class BstcgfController implements Initializable {
 
                     contextMenu.getItems()
                             .addAll(copyName, copyID, copyCards, copyPrice, copyRating,
-                                    new SeparatorMenuItem() , copySteamShopLink, copySteamDbLink,
+                                    new SeparatorMenuItem(), copySteamShopLink, copySteamDbLink,
                                     new SeparatorMenuItem(), setStatusPurchased, setStatusWishlisted, setStatusIgnored, setStatusNone);
 
                     row.contextMenuProperty().bind(
