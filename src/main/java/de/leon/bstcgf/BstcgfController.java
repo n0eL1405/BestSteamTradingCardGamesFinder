@@ -99,7 +99,9 @@ public class BstcgfController implements Initializable {
 
     private CountryCode selectedCountryCode;
 
-    Settings settings = new Settings("settings_Main");
+    private final Settings settings = new Settings("settings_Main");
+
+    private boolean isLoading = false;
 
     private final Executor executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "controller-thread");
@@ -263,6 +265,7 @@ public class BstcgfController implements Initializable {
     public void loadDataAction(ActionEvent actionEvent) {
         //loadData();
         deactivateWhileLoading();
+        isLoading = true;
 
         tableGameDataObservableList.clear();
 
@@ -271,11 +274,13 @@ public class BstcgfController implements Initializable {
 
         loadGameDataFromSteamTask.setOnSucceeded(wse -> {
             activateAfterLoading();
+            isLoading = false;
         });
 
         loadGameDataFromSteamTask.setOnFailed(wse -> {
             loadGameDataFromSteamTask.getException().printStackTrace();
             activateAfterLoading();
+            isLoading = false;
         });
 
         executor.execute(loadGameDataFromSteamTask);
@@ -333,10 +338,12 @@ public class BstcgfController implements Initializable {
                     contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
                         @Override
                         public void handle(WindowEvent event) {
-                            setStatusPurchased.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.PURCHASED.toString()));
-                            setStatusWishlisted.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.WISHLISTED.toString()));
-                            setStatusIgnored.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.IGNORED.toString()));
-                            setStatusNone.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.NONE.toString()));
+
+                            // if the status of the row (game) equals the status that the MenuItem will set the row (game) to OR if isLoading is true, the MenuItem will be disabled
+                            setStatusPurchased.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.PURCHASED.toString()) || isLoading);
+                            setStatusWishlisted.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.WISHLISTED.toString()) || isLoading);
+                            setStatusIgnored.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.IGNORED.toString()) || isLoading);
+                            setStatusNone.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.NONE.toString()) || isLoading);
                         }
                     });
 
@@ -497,7 +504,6 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(true);
         searchTextField.setDisable(true);
         resetFilter.setDisable(true);
-        //tableGameDataTableView.setRowFactory(null); // removes the right click context menu from the rows
     }
 
     private void activateAfterLoading() {
@@ -505,6 +511,5 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setDisable(false);
         searchTextField.setDisable(false);
         resetFilter.setDisable(false);
-        //createContextMenu(); // *should* add the right click context menu back (todo does not work)
     }
 }
