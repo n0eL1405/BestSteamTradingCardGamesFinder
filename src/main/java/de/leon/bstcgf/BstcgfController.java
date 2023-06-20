@@ -24,7 +24,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
@@ -38,6 +41,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.WindowEvent;
 import javafx.util.Callback;
+import org.controlsfx.control.CheckComboBox;
 import org.controlsfx.control.SearchableComboBox;
 
 public class BstcgfController implements Initializable {
@@ -90,6 +94,9 @@ public class BstcgfController implements Initializable {
     @FXML
     private Button resetFilter;
 
+    @FXML
+    private CheckComboBox<TableGameData.Status> filterStatusComboBox;
+
     private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
     private final FilteredList<TableGameData> filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
@@ -102,6 +109,9 @@ public class BstcgfController implements Initializable {
     private final Settings settings = new Settings("settings_Main");
 
     private boolean isLoading = false;
+
+    private final ObjectProperty<Predicate<TableGameData>> containsSearchTextPredicate = new SimpleObjectProperty<>();
+    private final ObjectProperty<Predicate<TableGameData>> hasStatusPredicate = new SimpleObjectProperty<>();
 
     private final Executor executor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "controller-thread");
@@ -122,9 +132,11 @@ public class BstcgfController implements Initializable {
 
         initCountryCodeSearchComboBox();
 
-        initTable();
-
         initProgressionBar();
+
+        initStatusFilter();
+
+        initTable();
 
     }
 
@@ -188,6 +200,10 @@ public class BstcgfController implements Initializable {
         tableColumnPrice.prefWidthProperty().bind(tableGameDataTableView.widthProperty().multiply(1/6));
         tableColumnRating.prefWidthProperty().bind(tableGameDataTableView.widthProperty().multiply(1/6));
          */
+
+        filteredTableGameDataList.predicateProperty().bind(Bindings.createObjectBinding(
+                () -> hasStatusPredicate.get().and(containsSearchTextPredicate.get()),
+                hasStatusPredicate, containsSearchTextPredicate));
 
         tableGameDataTableView.setItems(filteredTableGameDataList);
     }
@@ -284,6 +300,22 @@ public class BstcgfController implements Initializable {
         });
 
         executor.execute(loadGameDataFromSteamTask);
+    }
+
+    private void deactivateWhileLoading() {
+        loadDataButton.setDisable(true);
+        countryCodeSearchComboBox.setDisable(true);
+        searchTextField.setDisable(true);
+        resetFilter.setDisable(true);
+        filterStatusComboBox.setDisable(true);
+    }
+
+    private void activateAfterLoading() {
+        loadDataButton.setDisable(false);
+        countryCodeSearchComboBox.setDisable(false);
+        searchTextField.setDisable(false);
+        resetFilter.setDisable(false);
+        filterStatusComboBox.setDisable(false);
     }
 
     private void setCellValueFactories() {
@@ -469,47 +501,36 @@ public class BstcgfController implements Initializable {
 
     private void initSearchField() {
 
-        //filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
-
-        searchTextField.textProperty().addListener((observable, oldValue, newValue) -> {
-
-            if (!newValue.trim().isEmpty() || !newValue.trim().isBlank()) {
-
-                String searchFieldText = newValue.trim().toLowerCase();
-
-                Predicate<TableGameData> containsSearchText = item ->
-                        item.getName().toLowerCase().contains(searchFieldText)
-                                || item.getId().toString().toLowerCase().contains(searchFieldText)
-                                || item.getCardsString().toLowerCase().contains(searchFieldText)
-                                || item.getPrice().toLowerCase().contains(searchFieldText)
-                                || item.getRating().toString().toLowerCase().contains(searchFieldText);
-
-                filteredTableGameDataList.setPredicate(containsSearchText);
-
-            } else {
-
-                filteredTableGameDataList.setPredicate(null);
-
-            }
-        });
+        containsSearchTextPredicate.bind(Bindings.createObjectBinding(() ->
+                        item -> searchTextField.getText().isBlank()
+                                || item.getName().toLowerCase().contains(searchTextField.getText().toLowerCase())
+                                || item.getId().toString().toLowerCase().contains(searchTextField.getText().toLowerCase())
+                                || item.getCardsString().toLowerCase().contains(searchTextField.getText().toLowerCase())
+                                || item.getPrice().toLowerCase().contains(searchTextField.getText().toLowerCase())
+                                || item.getRating().toString().toLowerCase().contains(searchTextField.getText().toLowerCase()),
+                searchTextField.textProperty()));
     }
 
     public void resetFilterAction(ActionEvent actionEvent) {
         searchTextField.setText("");
-        filteredTableGameDataList.setPredicate(null);
+        containsSearchTextPredicate.unbind();
+        filterStatusComboBox.getCheckModel().checkAll();
     }
 
-    private void deactivateWhileLoading() {
-        loadDataButton.setDisable(true);
-        countryCodeSearchComboBox.setDisable(true);
-        searchTextField.setDisable(true);
-        resetFilter.setDisable(true);
-    }
+    private void initStatusFilter() {
 
-    private void activateAfterLoading() {
-        loadDataButton.setDisable(false);
-        countryCodeSearchComboBox.setDisable(false);
-        searchTextField.setDisable(false);
-        resetFilter.setDisable(false);
+        filterStatusComboBox.getItems().setAll(TableGameData.Status.values());
+
+        settings.getStatusFilter().forEach(status -> {
+            filterStatusComboBox.getCheckModel().check(status);
+        });
+
+        hasStatusPredicate.bind(Bindings.createObjectBinding(() ->
+                        game -> filterStatusComboBox.getCheckModel().getCheckedItems().contains(TableGameData.Status.valueOf(game.getStatus().toUpperCase())),
+                filterStatusComboBox.getCheckModel().getCheckedItems()));
+
+        filterStatusComboBox.getCheckModel().getCheckedItems().addListener((ListChangeListener<TableGameData.Status>) c -> {
+            settings.saveStatusFilter(filterStatusComboBox.getCheckModel().getCheckedItems());
+        });
     }
 }

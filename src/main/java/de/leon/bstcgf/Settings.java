@@ -100,14 +100,28 @@ public class Settings {
      * Reads the settings and returns it as a Json String
      *
      * @param setting the {@link Setting} to read
+     * @return A Json String
+     */
+    private JSONArray getAsJSONArray(Setting setting) {
+        try {
+            return getAsJSONArrayRaw(setting);
+        } catch (JSONException | NullPointerException ignore) {
+            return new JSONArray();
+        }
+    }
+
+    /**
+     * Reads the settings and returns it as a Json String
+     *
+     * @param setting the {@link Setting} to read
      * @throws NullPointerException If no value for the given Setting is found
      * @return A Json String
      */
-    private JSONArray getAsJSONArray(Setting setting) throws NullPointerException {
+    private JSONArray getAsJSONArrayRaw(Setting setting) throws NullPointerException {
         try {
             return (JSONArray) settings.get(setting.toString().toUpperCase());
-        } catch (JSONException ignore) {
-            return new JSONArray();
+        } catch (JSONException | NullPointerException jsonException) {
+            throw new NullPointerException(jsonException.getMessage());
         }
     }
 
@@ -215,11 +229,29 @@ public class Settings {
         return getStatusByGameId(game.getId());
     }
 
+    public void saveStatusFilter(List<TableGameData.Status> statusList) {
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.putAll(statusList);
+        saveAsJSONArray(Setting.STATUS_FILTER, jsonArray);
+    }
+
+    public List<TableGameData.Status> getStatusFilter() {
+
+        // if a NPE is thrown, that means there are no status filter saved, in that case the array for the saved status filter will be created with all statuses
+        try {
+            return getAsJSONArrayRaw(Setting.STATUS_FILTER).toList().stream().map(status -> TableGameData.Status.valueOf(status.toString().toUpperCase())).collect(Collectors.toList());
+        } catch (NullPointerException ignored) {
+            saveStatusFilter(List.of(TableGameData.Status.values()));
+            return getStatusFilter();
+        }
+    }
+
     public enum Setting {
         COUNTRY_CODE,
         PURCHASED_GAMES,
         WISHLISTED_GAMES,
         IGNORED_GAMES,
-        NONE_STATUS_GAMES;
+        NONE_STATUS_GAMES,
+        STATUS_FILTER;
     }
 }
