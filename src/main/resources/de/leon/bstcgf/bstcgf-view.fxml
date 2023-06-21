@@ -35,6 +35,38 @@
                     </HBox.margin>
                 </StackPane>
             </HBox>
+            <HBox alignment="CENTER_LEFT" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
+                    <SearchableComboBox fx:id="profileSearchComboBox" onAction="#profileSearchComboBoxAction" />
+                    <HBox.margin>
+                        <Insets left="5.0" right="5.0" top="5.0" />
+                    </HBox.margin>
+                </StackPane>
+                <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                    <HBox.margin>
+                        <Insets right="5.0" top="5.0" />
+                    </HBox.margin>
+                    <Button fx:id="newProfileButton" mnemonicParsing="false" onAction="#newProfileButtonAction" text="New Profile" />
+                </StackPane>
+                <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                    <HBox.margin>
+                        <Insets right="5.0" top="5.0" />
+                    </HBox.margin>
+                    <Button fx:id="copyProfileButton" mnemonicParsing="false" onAction="#copyProfileButtonAction" text="Copy Profile" />
+                </StackPane>
+                <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                    <HBox.margin>
+                        <Insets right="5.0" top="5.0" />
+                    </HBox.margin>
+                    <Button fx:id="editProfileButton" mnemonicParsing="false" onAction="#editProfileButtonAction" text="Edit Profile" />
+                </StackPane>
+                <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
+                    <HBox.margin>
+                        <Insets right="5.0" top="5.0" />
+                    </HBox.margin>
+                    <Button fx:id="deleteProfileButton" mnemonicParsing="false" onAction="#deleteProfileButtonAction" text="Delete Profile" />
+                </StackPane>
+            </HBox>
             <HBox fx:id="hBoxTopBottom" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
                 <VBox.margin>
                     <Insets />

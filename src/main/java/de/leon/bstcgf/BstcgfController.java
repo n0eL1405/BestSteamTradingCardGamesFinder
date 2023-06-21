@@ -12,7 +12,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,7 +20,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
@@ -65,6 +63,9 @@ public class BstcgfController implements Initializable {
     private SearchableComboBox<CountryCode> countryCodeSearchComboBox;
 
     @FXML
+    private SearchableComboBox<Settings.Profile> profileSearchComboBox;
+
+    @FXML
     private TableView<TableGameData> tableGameDataTableView;
 
     @FXML
@@ -97,18 +98,33 @@ public class BstcgfController implements Initializable {
     @FXML
     private CheckComboBox<TableGameData.Status> filterStatusComboBox;
 
+    @FXML
+    private Button newProfileButton;
+
+    @FXML
+    private Button copyProfileButton;
+
+    @FXML
+    private Button editProfileButton;
+
+    @FXML
+    private Button deleteProfileButton;
+
     private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
     private final FilteredList<TableGameData> filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
+    private final ObservableList<Settings.Profile> profilesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
     private final static String STEAMDB_URL = "https://steamdb.info/app/";
 
     private CountryCode selectedCountryCode;
+    private Settings.Profile selectedProfile;
 
-    private final Settings settings = new Settings("main");
+    private Settings settings = new Settings("main");
 
     private boolean isLoading = false;
+    private boolean dontSave = false;
 
     private final ObjectProperty<Predicate<TableGameData>> containsSearchTextPredicate = new SimpleObjectProperty<>();
     private final ObjectProperty<Predicate<TableGameData>> hasStatusPredicate = new SimpleObjectProperty<>();
@@ -127,6 +143,8 @@ public class BstcgfController implements Initializable {
     }
 
     private void initUI() {
+
+        initProfileSearchComboBox();
 
         initSearchField();
 
@@ -308,6 +326,11 @@ public class BstcgfController implements Initializable {
         searchTextField.setDisable(true);
         resetFilter.setDisable(true);
         filterStatusComboBox.setDisable(true);
+        profileSearchComboBox.setDisable(true);
+        newProfileButton.setDisable(true);
+        copyProfileButton.setDisable(true);
+        editProfileButton.setDisable(true);
+        deleteProfileButton.setDisable(true);
     }
 
     private void activateAfterLoading() {
@@ -316,6 +339,11 @@ public class BstcgfController implements Initializable {
         searchTextField.setDisable(false);
         resetFilter.setDisable(false);
         filterStatusComboBox.setDisable(false);
+        filterStatusComboBox.setDisable(false);
+        newProfileButton.setDisable(false);
+        copyProfileButton.setDisable(false);
+        editProfileButton.setDisable(false);
+        deleteProfileButton.setDisable(false);
     }
 
     private void setCellValueFactories() {
@@ -521,16 +549,81 @@ public class BstcgfController implements Initializable {
 
         filterStatusComboBox.getItems().setAll(TableGameData.Status.values());
 
-        settings.getStatusFilter().forEach(status -> {
-            filterStatusComboBox.getCheckModel().check(status);
-        });
+        settings.getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
 
         hasStatusPredicate.bind(Bindings.createObjectBinding(() ->
                         game -> filterStatusComboBox.getCheckModel().getCheckedItems().contains(TableGameData.Status.valueOf(game.getStatus().toUpperCase())),
                 filterStatusComboBox.getCheckModel().getCheckedItems()));
 
         filterStatusComboBox.getCheckModel().getCheckedItems().addListener((ListChangeListener<TableGameData.Status>) c -> {
-            settings.saveStatusFilter(filterStatusComboBox.getCheckModel().getCheckedItems());
+            if (!dontSave) {
+                settings.saveStatusFilter(filterStatusComboBox.getCheckModel().getCheckedItems());
+            }
         });
+    }
+
+    private void initProfileSearchComboBox() {
+
+        profilesObservableList.addAll(Settings.getAllProfils());
+        profileSearchComboBox.setItems(profilesObservableList);
+
+        try {
+            selectedProfile = new Settings.Profile(settings.getFileName(), settings.getName());
+            profileSearchComboBox.setValue(selectedProfile);
+        } catch (NullPointerException npe) {
+            profileSearchComboBox.setValue(profileSearchComboBox.getItems().get(0));
+            selectedProfile = profilesObservableList.get(0);
+        }
+
+        Callback<ListView<Settings.Profile>, ListCell<Settings.Profile>> cellFactory = new Callback<>() {
+            @Override
+            public ListCell<Settings.Profile> call(ListView<Settings.Profile> profileListView) {
+                return new ListCell<>() {
+                    @Override
+                    protected void updateItem(Settings.Profile profile, boolean empty) {
+                        super.updateItem(profile, empty);
+
+                        if (profile == null || empty) {
+                            setText(null);
+                        } else {
+                            setText(profile.getName());
+                            settings = new Settings(profile.getName());
+                        }
+                    }
+                };
+            }
+        };
+
+        profileSearchComboBox.setButtonCell(cellFactory.call(null));
+        profileSearchComboBox.setCellFactory(cellFactory);
+
+    }
+
+    public void profileSearchComboBoxAction(ActionEvent actionEvent) {
+        try {
+            settings = new Settings(profileSearchComboBox.getValue().getName());
+            updateSettings();
+        } catch (NullPointerException ignore) {}
+    }
+
+    private void updateSettings() {
+        countryCodeSearchComboBox.setValue(settings.getCountryCode());
+
+        dontSave = true;
+        filterStatusComboBox.getCheckModel().clearChecks();
+        dontSave = false;
+        settings.getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
+    }
+
+    public void newProfileButtonAction(ActionEvent actionEvent) {
+    }
+
+    public void copyProfileButtonAction(ActionEvent actionEvent) {
+    }
+
+    public void editProfileButtonAction(ActionEvent actionEvent) {
+    }
+
+    public void deleteProfileButtonAction(ActionEvent actionEvent) {
     }
 }

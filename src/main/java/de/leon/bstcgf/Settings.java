@@ -3,8 +3,8 @@ package de.leon.bstcgf;
 
 import de.leon.bstcgf.data.CountryCode;
 import de.leon.bstcgf.data.TableGameData;
-import de.leon.bstcgf.data.steam.SteamGame;
-import lombok.NonNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,20 +26,25 @@ public class Settings {
 
     // at the moment the version is useless, but it will help if the structure of the settings are changing
     private static final String VERSION = "1";
-    private static final String VERSION_KEY = "version";
-    private static final String NAME_KEY = "name";
+    private static final String VERSION_KEY = "VERSION";
+    private static final String NAME_KEY = "NAME";
+    private static final String FILENAME_KEY = "FILE_NAME";
     private JSONObject settings;
     private final String name;
     private final File file;
 
-    public Settings(String name) {
+    public Settings(String name, boolean activateProfile) {
         this.name = name;
         this.file = new File(PROFILE_FOLDER + name.replace(" ", "_") + ".json");
 
-        init();
+        init(activateProfile);
     }
 
-    private void init() {
+    public Settings(String name) {
+        this(name, true);
+    }
+
+    private void init(boolean activateProfile) {
 
         if (!new File(ACTIVE_PROFILE_NAME).exists()) {
             initNewFile(new File(ACTIVE_PROFILE_NAME));
@@ -54,27 +59,36 @@ public class Settings {
         }
 
         if (file.exists()) {
-            activateProfileOrCreateNew();
+            if (activateProfile) {
+                activateProfile();
+            } else {
+                try {
+                    loadData(file);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         } else {
             initNewFile(file);
         }
     }
 
-    private void activateProfileOrCreateNew() {
+    private void activateProfile() {
+        File activeProfileFile = new File(ACTIVE_PROFILE_NAME);
         try {
             Path selectedProfilePath = Paths.get(file.getAbsolutePath());
-            Path activeProfilePath = Paths.get(new File(ACTIVE_PROFILE_NAME).getAbsolutePath());
+            Path activeProfilePath = Paths.get(activeProfileFile.getAbsolutePath());
             Files.copy(selectedProfilePath, activeProfilePath, StandardCopyOption.REPLACE_EXISTING);
 
-            loadData();
+            loadData(activeProfileFile);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void loadData() throws FileNotFoundException {
-        InputStream inputStream = new FileInputStream(ACTIVE_PROFILE_NAME);
+    private void loadData(File file) throws FileNotFoundException {
+        InputStream inputStream = new FileInputStream(file.getAbsolutePath());
         String jsonText;
         try (Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)) {
             jsonText = scanner.useDelimiter("\\A").next();
@@ -87,6 +101,7 @@ public class Settings {
 
         settings.put(VERSION_KEY, VERSION);
         settings.put(NAME_KEY, this.name);
+        settings.put(FILENAME_KEY, file.getName());
 
         saveAsFile(file);
     }
@@ -103,21 +118,21 @@ public class Settings {
     private void saveAsJSONObject(Setting setting, JSONObject value) {
         settings.put(setting.toString(), value);
         saveAsFile(file);
-        activateProfileOrCreateNew();
+        activateProfile();
     }
 
     private void saveAsJSONArray(Setting setting, JSONArray value) {
         settings.put(setting.toString(), value);
         saveAsFile(file);
-        activateProfileOrCreateNew();
+        activateProfile();
     }
 
     /**
      * Reads the settings and returns it as a Json String
      *
      * @param setting the {@link Setting} to read
-     * @throws NullPointerException If no value for the given Setting is found
      * @return A Json String
+     * @throws NullPointerException If no value for the given Setting is found
      */
     private JSONObject getAsJSONObject(Setting setting) throws NullPointerException {
         try {
@@ -145,8 +160,8 @@ public class Settings {
      * Reads the settings and returns it as a Json String
      *
      * @param setting the {@link Setting} to read
-     * @throws NullPointerException If no value for the given Setting is found
      * @return A Json String
+     * @throws NullPointerException If no value for the given Setting is found
      */
     private JSONArray getAsJSONArrayRaw(Setting setting) throws NullPointerException {
         try {
@@ -228,6 +243,10 @@ public class Settings {
         return (String) settings.get(NAME_KEY);
     }
 
+    public String getFileName() {
+        return (String) settings.get(FILENAME_KEY);
+    }
+
     public void saveCountryCode(CountryCode countryCode) {
         saveAsJSONObject(Setting.COUNTRY_CODE, countryCode.toJSONObject());
     }
@@ -284,5 +303,21 @@ public class Settings {
         IGNORED_GAMES,
         NONE_STATUS_GAMES,
         STATUS_FILTER;
+    }
+
+    public static List<Profile> getAllProfils() {
+        return Arrays.stream(
+                        Objects.requireNonNull(new File(PROFILE_FOLDER).listFiles(File::isFile)))
+                .map(f ->
+                        new Profile(f.getName(),
+                                new Settings(f.getName().replace(".json", "").replace("_", " "), false).getName()))
+                .collect(Collectors.toList());
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class Profile {
+        String fileName;
+        String name;
     }
 }
