@@ -336,7 +336,7 @@ public class BstcgfController implements Initializable {
         searchTextField.setDisable(false);
         resetFilter.setDisable(false);
         filterStatusComboBox.setDisable(false);
-        filterStatusComboBox.setDisable(false);
+        profileSearchComboBox.setDisable(false);
         newProfileButton.setDisable(false);
         copyProfileButton.setDisable(false);
         editProfileButton.setDisable(false);
