@@ -37,4 +37,5 @@ build/
 ### Mac OS ###
 
 ### OTHER ###
-/settings_Main.json
+/active_profile.json
+/profiles/

@@ -106,7 +106,7 @@ public class BstcgfController implements Initializable {
 
     private CountryCode selectedCountryCode;
 
-    private final Settings settings = new Settings("settings_Main");
+    private final Settings settings = new Settings("main");
 
     private boolean isLoading = false;
 

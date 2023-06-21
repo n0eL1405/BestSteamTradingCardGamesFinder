@@ -11,10 +11,18 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Settings {
+
+    private static final String ACTIVE_PROFILE_NAME = "active_profile.json";
+
+    private static final String PROFILE_FOLDER = "profiles\\";
 
     // at the moment the version is useless, but it will help if the structure of the settings are changing
     private static final String VERSION = "1";
@@ -22,63 +30,86 @@ public class Settings {
     private static final String NAME_KEY = "name";
     private JSONObject settings;
     private final String name;
-    private final String fileName;
-
-    File file;
+    private final File file;
 
     public Settings(String name) {
         this.name = name;
-        this.fileName = name.replace(" ", "_") + ".json";
+        this.file = new File(PROFILE_FOLDER + name.replace(" ", "_") + ".json");
 
         init();
     }
 
     private void init() {
-        file = new File(fileName);
 
-        if (file.exists()) {
+        if (!new File(ACTIVE_PROFILE_NAME).exists()) {
+            initNewFile(new File(ACTIVE_PROFILE_NAME));
+        }
+
+        if (!new File(PROFILE_FOLDER).exists()) {
             try {
-                InputStream inputStream = new FileInputStream(fileName);
-                String jsonText;
-                try (Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)) {
-                    jsonText = scanner.useDelimiter("\\A").next();
-                }
-                settings = new JSONObject(jsonText);
-
-            } catch (FileNotFoundException e) {
+                Files.createDirectories(Paths.get(new File(PROFILE_FOLDER).getAbsolutePath()));
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        if (file.exists()) {
+            activateProfileOrCreateNew();
         } else {
-            initNewFile();
+            initNewFile(file);
         }
     }
 
-    private void initNewFile() {
+    private void activateProfileOrCreateNew() {
+        try {
+            Path selectedProfilePath = Paths.get(file.getAbsolutePath());
+            Path activeProfilePath = Paths.get(new File(ACTIVE_PROFILE_NAME).getAbsolutePath());
+            Files.copy(selectedProfilePath, activeProfilePath, StandardCopyOption.REPLACE_EXISTING);
+
+            loadData();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void loadData() throws FileNotFoundException {
+        InputStream inputStream = new FileInputStream(ACTIVE_PROFILE_NAME);
+        String jsonText;
+        try (Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+            jsonText = scanner.useDelimiter("\\A").next();
+        }
+        settings = new JSONObject(jsonText);
+    }
+
+    private void initNewFile(File file) {
         settings = new JSONObject();
 
         settings.put(VERSION_KEY, VERSION);
         settings.put(NAME_KEY, this.name);
 
-        saveAsFile();
+        saveAsFile(file);
     }
 
-    private void saveAsFile() {
-        try (FileWriter fileWriter = new FileWriter(fileName)) {
+    private void saveAsFile(File file) {
+        try (FileWriter fileWriter = new FileWriter(file)) {
             fileWriter.write(settings.toString(4));
             fileWriter.flush();
         } catch (IOException ioException) {
-            ioException.fillInStackTrace();
+            ioException.printStackTrace();
         }
     }
 
     private void saveAsJSONObject(Setting setting, JSONObject value) {
         settings.put(setting.toString(), value);
-        saveAsFile();
+        saveAsFile(file);
+        activateProfileOrCreateNew();
     }
 
     private void saveAsJSONArray(Setting setting, JSONArray value) {
         settings.put(setting.toString(), value);
-        saveAsFile();
+        saveAsFile(file);
+        activateProfileOrCreateNew();
     }
 
     /**
