@@ -14,7 +14,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -24,7 +23,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 import org.controlsfx.control.CheckComboBox;
 import org.controlsfx.control.SearchableComboBox;
@@ -232,7 +230,7 @@ public class BstcgfController implements Initializable {
         }
 
         @Override
-        protected Void call() throws Exception {
+        protected Void call() {
 
             try {
 
@@ -392,16 +390,13 @@ public class BstcgfController implements Initializable {
                     MenuItem setStatusIgnored = new MenuItem("Set Status \"Ignored\"");
                     MenuItem setStatusNone = new MenuItem("Set Status \"None\"");
 
-                    contextMenu.setOnShowing(new EventHandler<WindowEvent>() {
-                        @Override
-                        public void handle(WindowEvent event) {
+                    contextMenu.setOnShowing(event -> {
 
-                            // if the status of the row (game) equals the status that the MenuItem will set the row (game) to OR if isLoading is true, the MenuItem will be disabled
-                            setStatusPurchased.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.PURCHASED.toString()) || isLoading);
-                            setStatusWishlisted.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.WISHLISTED.toString()) || isLoading);
-                            setStatusIgnored.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.IGNORED.toString()) || isLoading);
-                            setStatusNone.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.NONE.toString()) || isLoading);
-                        }
+                        // if the status of the row (game) equals the status that the MenuItem will set the row (game) to OR if isLoading is true, the MenuItem will be disabled
+                        setStatusPurchased.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.PURCHASED.toString()) || isLoading);
+                        setStatusWishlisted.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.WISHLISTED.toString()) || isLoading);
+                        setStatusIgnored.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.IGNORED.toString()) || isLoading);
+                        setStatusNone.setDisable(row.getItem().getStatus().toUpperCase().equals(TableGameData.Status.NONE.toString()) || isLoading);
                     });
 
                     copyName.setOnAction(actionEvent -> clipboard.setContents(
