@@ -1,6 +1,5 @@
 package de.leon.bstcgf.data;
 
-import de.leon.bstcgf.Settings;
 import de.leon.bstcgf.data.steam.SteamGame;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeGameData;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -28,21 +27,18 @@ public class TableGameData {
         this.price = new SimpleStringProperty(
             steamGame.getData().getSteamPriceOverview().getFinalPriceFormatted());
         this.rating = new SimpleDoubleProperty(
-            calcRating(steamGame.getData().getSteamPriceOverview().getFinalPrice(),
-                obtainableCards));
+            calcRating(steamGame.getData().getSteamPriceOverview().getFinalPrice()
+            ));
         this.status = new SimpleStringProperty(status.toString());
 
-        StringBuilder cardsStringBuilder = new StringBuilder()
-            .append(steamCardExchangeGameData.getTradingCards())
-            .append(" (")
-            .append(this.obtainableCards)
-            .append(")");
+        String cardsStringBuilder = steamCardExchangeGameData.getTradingCards() +
+                " (" + this.obtainableCards + ")";
 
-        this.cardsString = new SimpleStringProperty(cardsStringBuilder.toString());
+        this.cardsString = new SimpleStringProperty(cardsStringBuilder);
 
     }
 
-    private Double calcRating(Integer price, Integer obtainableCards) {
+    private Double calcRating(Integer price) {
         return (double) price / cards;
     }
 

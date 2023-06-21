@@ -6,8 +6,30 @@ import de.leon.bstcgf.data.steam.SteamGame;
 import de.leon.bstcgf.data.steam.SteamJsonData;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeGameData;
 import de.leon.bstcgf.data.steamcardexchange.SteamCardExchangeJsonData;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
+import javafx.event.EventHandler;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.WindowEvent;
+import javafx.util.Callback;
+import org.controlsfx.control.CheckComboBox;
+import org.controlsfx.control.SearchableComboBox;
 
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
@@ -21,43 +43,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.stage.WindowEvent;
-import javafx.util.Callback;
-import org.controlsfx.control.CheckComboBox;
-import org.controlsfx.control.SearchableComboBox;
-
 public class BstcgfController implements Initializable {
 
     @FXML
     public ProgressBar progressionBar;
 
     @FXML
-    private VBox vBoxMain;
-
+    public HBox hBoxTopBottom;
     @FXML
-    private VBox vBoxTop;
-
+    public VBox vBoxMain;
     @FXML
-    private HBox hBoxTopTop;
-
+    public VBox vBoxTop;
     @FXML
-    private HBox hBoxTopBottom;
+    public HBox hBoxTopTop;
 
     @FXML
     private SearchableComboBox<CountryCode> countryCodeSearchComboBox;
@@ -119,7 +117,6 @@ public class BstcgfController implements Initializable {
     private final static String STEAMDB_URL = "https://steamdb.info/app/";
 
     private CountryCode selectedCountryCode;
-    private Settings.Profile selectedProfile;
 
     private Settings settings = new Settings("main");
 
@@ -201,7 +198,7 @@ public class BstcgfController implements Initializable {
 
     }
 
-    public void countryCodeSearchComboBoxAction(ActionEvent actionEvent) {
+    public void countryCodeSearchComboBoxAction() {
         selectedCountryCode = countryCodeSearchComboBox.getValue();
     }
 
@@ -296,7 +293,7 @@ public class BstcgfController implements Initializable {
         }
     }
 
-    public void loadDataAction(ActionEvent actionEvent) {
+    public void loadDataAction() {
         //loadData();
         deactivateWhileLoading();
         isLoading = true;
@@ -462,8 +459,7 @@ public class BstcgfController implements Initializable {
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
-                                    .get()
-                                    .setStatus(TableGameData.Status.PURCHASED.toString());
+                                    .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.PURCHASED.toString()));
                         }
                         settings.saveGameIdByStatus(TableGameData.Status.PURCHASED, row.getItem());
                     });
@@ -473,8 +469,7 @@ public class BstcgfController implements Initializable {
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
-                                    .get()
-                                    .setStatus(TableGameData.Status.WISHLISTED.toString());
+                                    .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.WISHLISTED.toString()));
                         }
                         settings.saveGameIdByStatus(TableGameData.Status.WISHLISTED, row.getItem());
                     });
@@ -484,8 +479,7 @@ public class BstcgfController implements Initializable {
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
-                                    .get()
-                                    .setStatus(TableGameData.Status.IGNORED.toString());
+                                    .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.IGNORED.toString()));
                         }
                         settings.saveGameIdByStatus(TableGameData.Status.IGNORED, row.getItem());
                     });
@@ -495,8 +489,7 @@ public class BstcgfController implements Initializable {
                             tableGameDataObservableList.stream()
                                     .filter(sg -> sg.equals(row.getItem()))
                                     .findFirst()
-                                    .get()
-                                    .setStatus(TableGameData.Status.NONE.toString());
+                                    .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.NONE.toString()));
                         }
                         settings.saveGameIdByStatus(TableGameData.Status.NONE, row.getItem());
                     });
@@ -539,7 +532,7 @@ public class BstcgfController implements Initializable {
                 searchTextField.textProperty()));
     }
 
-    public void resetFilterAction(ActionEvent actionEvent) {
+    public void resetFilterAction() {
         searchTextField.setText("");
         containsSearchTextPredicate.unbind();
         filterStatusComboBox.getCheckModel().checkAll();
@@ -568,11 +561,9 @@ public class BstcgfController implements Initializable {
         profileSearchComboBox.setItems(profilesObservableList);
 
         try {
-            selectedProfile = new Settings.Profile(settings.getFileName(), settings.getName());
-            profileSearchComboBox.setValue(selectedProfile);
+            profileSearchComboBox.setValue(new Settings.Profile(settings.getFileName(), settings.getName()));
         } catch (NullPointerException npe) {
             profileSearchComboBox.setValue(profileSearchComboBox.getItems().get(0));
-            selectedProfile = profilesObservableList.get(0);
         }
 
         Callback<ListView<Settings.Profile>, ListCell<Settings.Profile>> cellFactory = new Callback<>() {
@@ -599,11 +590,12 @@ public class BstcgfController implements Initializable {
 
     }
 
-    public void profileSearchComboBoxAction(ActionEvent actionEvent) {
+    public void profileSearchComboBoxAction() {
         try {
             settings = new Settings(profileSearchComboBox.getValue().getName());
             updateSettings();
-        } catch (NullPointerException ignore) {}
+        } catch (NullPointerException ignore) {
+        }
     }
 
     private void updateSettings() {
@@ -615,15 +607,15 @@ public class BstcgfController implements Initializable {
         settings.getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
     }
 
-    public void newProfileButtonAction(ActionEvent actionEvent) {
+    public void newProfileButtonAction() {
     }
 
-    public void copyProfileButtonAction(ActionEvent actionEvent) {
+    public void copyProfileButtonAction() {
     }
 
-    public void editProfileButtonAction(ActionEvent actionEvent) {
+    public void editProfileButtonAction() {
     }
 
-    public void deleteProfileButtonAction(ActionEvent actionEvent) {
+    public void deleteProfileButtonAction() {
     }
 }
