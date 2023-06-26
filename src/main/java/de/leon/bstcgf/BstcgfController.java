@@ -59,7 +59,7 @@ public class BstcgfController implements Initializable {
     private SearchableComboBox<CountryCode> countryCodeSearchComboBox;
 
     @FXML
-    private SearchableComboBox<Settings.Profile> profileSearchComboBox;
+    private SearchableComboBox<Profile.ProfileData> profileSearchComboBox;
 
     @FXML
     private TableView<TableGameData> tableGameDataTableView;
@@ -109,14 +109,14 @@ public class BstcgfController implements Initializable {
     private final ObservableList<TableGameData> tableGameDataObservableList = FXCollections.observableArrayList();
     private final FilteredList<TableGameData> filteredTableGameDataList = new FilteredList<>(tableGameDataObservableList, tableGameData -> true);
     private final ObservableList<CountryCode> countryCodesObservableList = FXCollections.observableArrayList();
-    private final ObservableList<Settings.Profile> profilesObservableList = FXCollections.observableArrayList();
+    private final ObservableList<Profile.ProfileData> profilesObservableList = FXCollections.observableArrayList();
 
     private final static String STEAM_STORE_URL = "https://store.steampowered.com/app/";
     private final static String STEAMDB_URL = "https://steamdb.info/app/";
 
     private CountryCode selectedCountryCode;
 
-    private Settings settings = new Settings("main");
+    private Settings settings = new Settings();
 
     private boolean isLoading = false;
     private boolean dontSave = false;
@@ -165,7 +165,7 @@ public class BstcgfController implements Initializable {
         countryCodeSearchComboBox.setItems(countryCodesObservableList);
 
         try {
-            selectedCountryCode = settings.getCountryCode();
+            selectedCountryCode = settings.getActiveProfile().getCountryCode();
             countryCodeSearchComboBox.setValue(selectedCountryCode);
         } catch (NullPointerException npe) {
             countryCodeSearchComboBox.setValue(countryCodeSearchComboBox.getItems().get(0));
@@ -184,7 +184,7 @@ public class BstcgfController implements Initializable {
                             setText(null);
                         } else {
                             setText(countryCode.getLabel());
-                            settings.saveCountryCode(countryCode);
+                            settings.getActiveProfile().saveCountryCode(countryCode);
                         }
                     }
                 };
@@ -260,7 +260,7 @@ public class BstcgfController implements Initializable {
                             if (sg.getData().getSteamPriceOverview().getInitialPrice()
                                     > 0) {
                                 tableGameDataObservableList.add(
-                                        new TableGameData(sg, steamCardExchangeGameData, settings.getStatusByGameId(sg.getId())));
+                                        new TableGameData(sg, steamCardExchangeGameData, settings.getActiveProfile().getStatusByGameId(sg.getId())));
                             }
 
                             gamesCounter.set(gamesCounter.get() + 1);
@@ -456,7 +456,7 @@ public class BstcgfController implements Initializable {
                                     .findFirst()
                                     .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.PURCHASED.toString()));
                         }
-                        settings.saveGameIdByStatus(TableGameData.Status.PURCHASED, row.getItem());
+                        settings.getActiveProfile().saveGameIdByStatus(TableGameData.Status.PURCHASED, row.getItem());
                     });
 
                     setStatusWishlisted.setOnAction(actionEvent -> {
@@ -466,7 +466,7 @@ public class BstcgfController implements Initializable {
                                     .findFirst()
                                     .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.WISHLISTED.toString()));
                         }
-                        settings.saveGameIdByStatus(TableGameData.Status.WISHLISTED, row.getItem());
+                        settings.getActiveProfile().saveGameIdByStatus(TableGameData.Status.WISHLISTED, row.getItem());
                     });
 
                     setStatusIgnored.setOnAction(actionEvent -> {
@@ -476,7 +476,7 @@ public class BstcgfController implements Initializable {
                                     .findFirst()
                                     .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.IGNORED.toString()));
                         }
-                        settings.saveGameIdByStatus(TableGameData.Status.IGNORED, row.getItem());
+                        settings.getActiveProfile().saveGameIdByStatus(TableGameData.Status.IGNORED, row.getItem());
                     });
 
                     setStatusNone.setOnAction(actionEvent -> {
@@ -486,7 +486,7 @@ public class BstcgfController implements Initializable {
                                     .findFirst()
                                     .ifPresent(tgd -> tgd.setStatus(TableGameData.Status.NONE.toString()));
                         }
-                        settings.saveGameIdByStatus(TableGameData.Status.NONE, row.getItem());
+                        settings.getActiveProfile().saveGameIdByStatus(TableGameData.Status.NONE, row.getItem());
                     });
 
                     contextMenu.getItems()
@@ -537,7 +537,7 @@ public class BstcgfController implements Initializable {
 
         filterStatusComboBox.getItems().setAll(TableGameData.Status.values());
 
-        settings.getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
+        settings.getActiveProfile().getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
 
         hasStatusPredicate.bind(Bindings.createObjectBinding(() ->
                         game -> filterStatusComboBox.getCheckModel().getCheckedItems().contains(TableGameData.Status.valueOf(game.getStatus().toUpperCase())),
@@ -545,35 +545,35 @@ public class BstcgfController implements Initializable {
 
         filterStatusComboBox.getCheckModel().getCheckedItems().addListener((ListChangeListener<TableGameData.Status>) c -> {
             if (!dontSave) {
-                settings.saveStatusFilter(filterStatusComboBox.getCheckModel().getCheckedItems());
+                settings.getActiveProfile().saveStatusFilter(filterStatusComboBox.getCheckModel().getCheckedItems());
             }
         });
     }
 
     private void initProfileSearchComboBox() {
 
-        profilesObservableList.addAll(Settings.getAllProfils());
+        profilesObservableList.addAll(Profile.getAllProfils());
         profileSearchComboBox.setItems(profilesObservableList);
 
         try {
-            profileSearchComboBox.setValue(new Settings.Profile(settings.getFileName(), settings.getName()));
+            profileSearchComboBox.setValue(new Profile.ProfileData(settings.getActiveProfile().getFileName(), settings.getActiveProfile().getName()));
         } catch (NullPointerException npe) {
             profileSearchComboBox.setValue(profileSearchComboBox.getItems().get(0));
         }
 
-        Callback<ListView<Settings.Profile>, ListCell<Settings.Profile>> cellFactory = new Callback<>() {
+        Callback<ListView<Profile.ProfileData>, ListCell<Profile.ProfileData>> cellFactory = new Callback<>() {
             @Override
-            public ListCell<Settings.Profile> call(ListView<Settings.Profile> profileListView) {
+            public ListCell<Profile.ProfileData> call(ListView<Profile.ProfileData> profileListView) {
                 return new ListCell<>() {
                     @Override
-                    protected void updateItem(Settings.Profile profile, boolean empty) {
+                    protected void updateItem(Profile.ProfileData profile, boolean empty) {
                         super.updateItem(profile, empty);
 
                         if (profile == null || empty) {
                             setText(null);
                         } else {
                             setText(profile.getName());
-                            settings = new Settings(profile.getName());
+                            settings.saveActiveProfileData(profile);
                         }
                     }
                 };
@@ -587,19 +587,19 @@ public class BstcgfController implements Initializable {
 
     public void profileSearchComboBoxAction() {
         try {
-            settings = new Settings(profileSearchComboBox.getValue().getName());
+            settings.saveActiveProfile(new Profile(profileSearchComboBox.getValue().getName()));
             updateSettings();
         } catch (NullPointerException ignore) {
         }
     }
 
     private void updateSettings() {
-        countryCodeSearchComboBox.setValue(settings.getCountryCode());
+        countryCodeSearchComboBox.setValue(settings.getActiveProfile().getCountryCode());
 
         dontSave = true;
         filterStatusComboBox.getCheckModel().clearChecks();
         dontSave = false;
-        settings.getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
+        settings.getActiveProfile().getStatusFilter().forEach(status -> filterStatusComboBox.getCheckModel().check(status));
     }
 
     public void newProfileButtonAction() {

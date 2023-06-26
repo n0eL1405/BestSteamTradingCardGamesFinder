@@ -1,26 +1,17 @@
 package de.leon.bstcgf;
 
-
-import de.leon.bstcgf.data.CountryCode;
-import de.leon.bstcgf.data.TableGameData;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Scanner;
 
 public class Settings {
-
-    private static final String ACTIVE_PROFILE_NAME = "active_profile.json";
+    private static final String APP_SETTINGS = "app_settings.json";
 
     private static final String PROFILE_FOLDER = "profiles\\";
 
@@ -30,60 +21,38 @@ public class Settings {
     private static final String NAME_KEY = "NAME";
     private static final String FILENAME_KEY = "FILE_NAME";
     private JSONObject settings;
-    private final String name;
-    private final File file;
 
-    public Settings(String name, boolean activateProfile) {
-        this.name = name;
-        this.file = new File(PROFILE_FOLDER + name.replace(" ", "_") + ".json");
+    @Getter
+    private Profile activeProfile;
+    private File file;
 
-        init(activateProfile);
+    public Settings() {
+
+        init();
     }
 
-    public Settings(String name) {
-        this(name, true);
-    }
+    private void init() {
 
-    private void init(boolean activateProfile) {
-
-        if (!new File(ACTIVE_PROFILE_NAME).exists()) {
-            initNewFile(new File(ACTIVE_PROFILE_NAME));
-        }
-
-        if (!new File(PROFILE_FOLDER).exists()) {
-            try {
-                Files.createDirectories(Paths.get(new File(PROFILE_FOLDER).getAbsolutePath()));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        if (file.exists()) {
-            if (activateProfile) {
-                activateProfile();
-            } else {
-                try {
-                    loadData(file);
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        if (new File(APP_SETTINGS).exists()) {
+            this.file = new File(APP_SETTINGS);
         } else {
-            initNewFile(file);
+            initNewFile();
         }
-    }
 
-    private void activateProfile() {
-        File activeProfileFile = new File(ACTIVE_PROFILE_NAME);
         try {
-            Path selectedProfilePath = Paths.get(file.getAbsolutePath());
-            Path activeProfilePath = Paths.get(activeProfileFile.getAbsolutePath());
-            Files.copy(selectedProfilePath, activeProfilePath, StandardCopyOption.REPLACE_EXISTING);
-
-            loadData(activeProfileFile);
-
-        } catch (IOException e) {
+            loadData(file);
+        } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
+        }
+
+        try {
+            activeProfile = new Profile(getActiveProfileData().getName());
+        } catch (Exception e) {
+            if (Profile.getAllProfils().isEmpty()) {
+                activeProfile = new Profile("main");
+            } else {
+                activeProfile = new Profile(Profile.getAllProfils().get(0).getName());
+            }
         }
     }
 
@@ -96,12 +65,11 @@ public class Settings {
         settings = new JSONObject(jsonText);
     }
 
-    private void initNewFile(File file) {
+    private void initNewFile() {
         settings = new JSONObject();
-
         settings.put(VERSION_KEY, VERSION);
-        settings.put(NAME_KEY, this.name);
-        settings.put(FILENAME_KEY, file.getName());
+
+        this.file = new File(APP_SETTINGS);
 
         saveAsFile(file);
     }
@@ -115,26 +83,24 @@ public class Settings {
         }
     }
 
-    private void saveAsJSONObject(Setting setting, JSONObject value) {
+    private void saveAsJSONObject(Settings.Setting setting, JSONObject value) {
         settings.put(setting.toString(), value);
         saveAsFile(file);
-        activateProfile();
     }
 
-    private void saveAsJSONArray(Setting setting, JSONArray value) {
+    private void saveAsJSONArray(Settings.Setting setting, JSONArray value) {
         settings.put(setting.toString(), value);
         saveAsFile(file);
-        activateProfile();
     }
 
     /**
      * Reads the settings and returns it as a Json String
      *
-     * @param setting the {@link Setting} to read
+     * @param setting the {@link Profile.Setting} to read
      * @return A Json String
      * @throws NullPointerException If no value for the given Setting is found
      */
-    private JSONObject getAsJSONObject(Setting setting) throws NullPointerException {
+    private JSONObject getAsJSONObject(Settings.Setting setting) throws NullPointerException {
         try {
             return (JSONObject) settings.get(setting.toString().toUpperCase());
         } catch (JSONException jsonException) {
@@ -145,10 +111,10 @@ public class Settings {
     /**
      * Reads the settings and returns it as a Json String
      *
-     * @param setting the {@link Setting} to read
+     * @param setting the {@link Profile.Setting} to read
      * @return A Json String
      */
-    private JSONArray getAsJSONArray(Setting setting) {
+    private JSONArray getAsJSONArray(Settings.Setting setting) {
         try {
             return getAsJSONArrayRaw(setting);
         } catch (JSONException | NullPointerException ignore) {
@@ -159,11 +125,11 @@ public class Settings {
     /**
      * Reads the settings and returns it as a Json String
      *
-     * @param setting the {@link Setting} to read
+     * @param setting the {@link Profile.Setting} to read
      * @return A Json String
      * @throws NullPointerException If no value for the given Setting is found
      */
-    private JSONArray getAsJSONArrayRaw(Setting setting) throws NullPointerException {
+    private JSONArray getAsJSONArrayRaw(Settings.Setting setting) throws NullPointerException {
         try {
             return (JSONArray) settings.get(setting.toString().toUpperCase());
         } catch (JSONException | NullPointerException jsonException) {
@@ -171,153 +137,20 @@ public class Settings {
         }
     }
 
-    private static Setting statusToSetting(TableGameData.Status status) {
-        switch (status) {
-            case PURCHASED:
-                return Setting.PURCHASED_GAMES;
-            case WISHLISTED:
-                return Setting.WISHLISTED_GAMES;
-            case IGNORED:
-                return Setting.IGNORED_GAMES;
-            case NONE:
-                return Setting.NONE_STATUS_GAMES;
-        }
-        return null;
+    public void saveActiveProfileData(Profile.ProfileData profile) {
+        this.activeProfile = new Profile(profile.getName());
+        saveAsJSONObject(Setting.ACTIVE_PROFILE, profile.toJSONObject());
     }
 
-    private static TableGameData.Status settingToStatus(Setting setting) {
-        switch (setting) {
-            case PURCHASED_GAMES:
-                return TableGameData.Status.PURCHASED;
-            case WISHLISTED_GAMES:
-                return TableGameData.Status.WISHLISTED;
-            case IGNORED_GAMES:
-                return TableGameData.Status.IGNORED;
-            case NONE_STATUS_GAMES:
-                return TableGameData.Status.NONE;
-        }
-        return null;
+    public void saveActiveProfile(Profile profile) {
+        saveActiveProfileData(new Profile.ProfileData(profile.getFileName(), profile.getName()));
     }
 
-    private JSONArray addGameIdToJSONArray(Setting setting, TableGameData game) {
-        JSONArray jsonArray = new JSONArray();
-        removeGameIdFromOtherJSONArrays(setting, game);
-        jsonArray = getAsJSONArray(setting);
-
-        if (jsonArray.toList().stream().noneMatch(id -> id.equals(game.getId()))) {
-            jsonArray.put(game.getId());
-        }
-        return jsonArray;
-    }
-
-    private void removeGameIdFromOtherJSONArrays(Setting setting, TableGameData game) {
-
-        if (!setting.equals(Setting.PURCHASED_GAMES)) {
-            List<Object> idList = getAsJSONArray(Setting.PURCHASED_GAMES).toList();
-            idList.stream().filter(id -> id.equals(game.getId())).findFirst().ifPresent(idList::remove);
-            saveAsJSONArray(Setting.PURCHASED_GAMES, new JSONArray(idList));
-
-        } else if (!setting.equals(Setting.WISHLISTED_GAMES)) {
-            List<Object> idList = getAsJSONArray(Setting.WISHLISTED_GAMES).toList();
-            idList.stream().filter(id -> id.equals(game.getId())).findFirst().ifPresent(idList::remove);
-            saveAsJSONArray(Setting.WISHLISTED_GAMES, new JSONArray(idList));
-
-        } else if (!setting.equals(Setting.IGNORED_GAMES)) {
-            List<Object> idList = getAsJSONArray(Setting.IGNORED_GAMES).toList();
-            idList.stream().filter(id -> id.equals(game.getId())).findFirst().ifPresent(idList::remove);
-            saveAsJSONArray(Setting.IGNORED_GAMES, new JSONArray(idList));
-
-        } else if (!setting.equals(Setting.NONE_STATUS_GAMES)) {
-            List<Object> idList = getAsJSONArray(Setting.NONE_STATUS_GAMES).toList();
-            idList.stream().filter(id -> id.equals(game.getId())).findFirst().ifPresent(idList::remove);
-            saveAsJSONArray(Setting.NONE_STATUS_GAMES, new JSONArray(idList));
-        }
-
-    }
-
-    public String getVersion() {
-        return (String) settings.get(VERSION_KEY);
-    }
-
-    public String getName() {
-        return (String) settings.get(NAME_KEY);
-    }
-
-    public String getFileName() {
-        return (String) settings.get(FILENAME_KEY);
-    }
-
-    public void saveCountryCode(CountryCode countryCode) {
-        saveAsJSONObject(Setting.COUNTRY_CODE, countryCode.toJSONObject());
-    }
-
-    public CountryCode getCountryCode() throws NullPointerException {
-        return CountryCode.fromJSONObject(getAsJSONObject(Setting.COUNTRY_CODE));
-    }
-
-    public void saveGameIdByStatus(TableGameData.Status status, TableGameData game) {
-        saveAsJSONArray(Objects.requireNonNull(statusToSetting(status)), addGameIdToJSONArray(statusToSetting(status), game));
-    }
-
-    public List<Integer> getGameIdsByStatus(TableGameData.Status status) throws NullPointerException {
-        return getAsJSONArray(Objects.requireNonNull(statusToSetting(status))).toList().stream().map(id -> Integer.valueOf(id.toString())).collect(Collectors.toList());
-    }
-
-    public TableGameData.Status getStatusByGameId(Integer gameId) {
-        if (getAsJSONArray(Setting.PURCHASED_GAMES).toList().stream().anyMatch(id -> id.equals(gameId))) {
-            return TableGameData.Status.PURCHASED;
-        } else if (getAsJSONArray(Setting.WISHLISTED_GAMES).toList().stream().anyMatch(id -> id.equals(gameId))) {
-            return TableGameData.Status.WISHLISTED;
-        } else if (getAsJSONArray(Setting.IGNORED_GAMES).toList().stream().anyMatch(id -> id.equals(gameId))) {
-            return TableGameData.Status.IGNORED;
-        } else {
-            return TableGameData.Status.NONE;
-        }
-    }
-
-    public TableGameData.Status getStatusByGame(TableGameData game) {
-        return getStatusByGameId(game.getId());
-    }
-
-    public void saveStatusFilter(List<TableGameData.Status> statusList) {
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.putAll(statusList);
-        saveAsJSONArray(Setting.STATUS_FILTER, jsonArray);
-    }
-
-    public List<TableGameData.Status> getStatusFilter() {
-
-        // if a NPE is thrown, that means there are no status filter saved, in that case the array for the saved status filter will be created with all statuses
-        try {
-            return getAsJSONArrayRaw(Setting.STATUS_FILTER).toList().stream().map(status -> TableGameData.Status.valueOf(status.toString().toUpperCase())).collect(Collectors.toList());
-        } catch (NullPointerException ignored) {
-            saveStatusFilter(List.of(TableGameData.Status.values()));
-            return getStatusFilter();
-        }
+    public Profile.ProfileData getActiveProfileData() {
+        return Profile.ProfileData.fromJSONObject(getAsJSONObject(Setting.ACTIVE_PROFILE));
     }
 
     public enum Setting {
-        COUNTRY_CODE,
-        PURCHASED_GAMES,
-        WISHLISTED_GAMES,
-        IGNORED_GAMES,
-        NONE_STATUS_GAMES,
-        STATUS_FILTER;
-    }
-
-    public static List<Profile> getAllProfils() {
-        return Arrays.stream(
-                        Objects.requireNonNull(new File(PROFILE_FOLDER).listFiles(File::isFile)))
-                .map(f ->
-                        new Profile(f.getName(),
-                                new Settings(f.getName().replace(".json", "").replace("_", " "), false).getName()))
-                .collect(Collectors.toList());
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class Profile {
-        String fileName;
-        String name;
+        ACTIVE_PROFILE;
     }
 }

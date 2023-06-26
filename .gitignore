@@ -39,3 +39,4 @@ build/
 ### OTHER ###
 /active_profile.json
 /profiles/
+/app_settings.json
