@@ -1,7 +1,6 @@
 package de.leon.bstcgf;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -143,7 +142,7 @@ public class Settings {
     }
 
     public void saveActiveProfile(Profile profile) {
-        saveActiveProfileData(new Profile.ProfileData(profile.getFileName(), profile.getName()));
+        saveActiveProfileData(new Profile.ProfileData(profile.getName()));
     }
 
     public Profile.ProfileData getActiveProfileData() {

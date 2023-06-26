@@ -12,10 +12,11 @@ import org.json.JSONObject;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class Profile {
@@ -26,23 +27,18 @@ public class Profile {
     private static final String VERSION = "1";
     private static final String VERSION_KEY = "VERSION";
     private static final String NAME_KEY = "NAME";
-    private static final String FILENAME_KEY = "FILE_NAME";
     private JSONObject settings;
     private final String name;
     private final File file;
 
-    public Profile(String name, boolean activateProfile) {
+    public Profile(String name) {
         this.name = name;
         this.file = new File(PROFILE_FOLDER + name.replace(" ", "_") + ".json");
 
-        init(activateProfile);
+        init();
     }
 
-    public Profile(String name) {
-        this(name, true);
-    }
-
-    private void init(boolean activateProfile) {
+    private void init() {
 
         if (!new File(PROFILE_FOLDER).exists()) {
             try {
@@ -77,7 +73,6 @@ public class Profile {
 
         settings.put(VERSION_KEY, VERSION);
         settings.put(NAME_KEY, this.name);
-        settings.put(FILENAME_KEY, file.getName());
 
         saveAsFile(file);
     }
@@ -217,10 +212,6 @@ public class Profile {
         return (String) settings.get(NAME_KEY);
     }
 
-    public String getFileName() {
-        return (String) settings.get(FILENAME_KEY);
-    }
-
     public void saveCountryCode(CountryCode countryCode) {
         saveAsJSONObject(Setting.COUNTRY_CODE, countryCode.toJSONObject());
     }
@@ -282,35 +273,30 @@ public class Profile {
     public static List<ProfileData> getAllProfils() {
         return Arrays.stream(
                         Objects.requireNonNull(new File(PROFILE_FOLDER).listFiles(File::isFile)))
-                .map(f ->
-                        new ProfileData(f.getName(),
-                                new de.leon.bstcgf.Profile(f.getName().replace(".json", "").replace("_", " "), false).getName()))
+                // a little bit sketchy but it should work
+                .map(f -> new ProfileData(f.getName().replace(".json", "").replace("_", " ")))
                 .collect(Collectors.toList());
     }
 
     @Data
     @AllArgsConstructor
     public static class ProfileData {
-        private String fileName;
         private String name;
 
         public static ProfileData fromJSONObject(JSONObject jsonObject) {
             return new ProfileData(
-                    jsonObject.get(Key.FILE_NAME.toString()).toString(),
                     jsonObject.get(Key.NAME.toString()).toString()
             );
         }
 
         public JSONObject toJSONObject() {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put(Key.FILE_NAME.toString(), fileName);
             jsonObject.put(Key.NAME.toString(), name);
 
             return jsonObject;
         }
 
         public enum Key {
-            FILE_NAME,
             NAME;
         }
     }

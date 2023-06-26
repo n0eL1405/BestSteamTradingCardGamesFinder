@@ -556,7 +556,7 @@ public class BstcgfController implements Initializable {
         profileSearchComboBox.setItems(profilesObservableList);
 
         try {
-            profileSearchComboBox.setValue(new Profile.ProfileData(settings.getActiveProfile().getFileName(), settings.getActiveProfile().getName()));
+            profileSearchComboBox.setValue(new Profile.ProfileData(settings.getActiveProfile().getName()));
         } catch (NullPointerException npe) {
             profileSearchComboBox.setValue(profileSearchComboBox.getItems().get(0));
         }
