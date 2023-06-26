@@ -326,8 +326,8 @@ public class BstcgfController implements Initializable {
         filterStatusComboBox.setDisable(true);
         profileSearchComboBox.setDisable(true);
         newProfileButton.setDisable(true);
-        copyProfileButton.setDisable(true);
-        renameProfileButton.setDisable(true);
+        /*copyProfileButton.setDisable(true);
+        renameProfileButton.setDisable(true);*/
         deleteProfileButton.setDisable(true);
     }
 
@@ -339,8 +339,8 @@ public class BstcgfController implements Initializable {
         filterStatusComboBox.setDisable(false);
         profileSearchComboBox.setDisable(false);
         newProfileButton.setDisable(false);
-        copyProfileButton.setDisable(false);
-        renameProfileButton.setDisable(false);
+        /*copyProfileButton.setDisable(false);
+        renameProfileButton.setDisable(false);*/
         deleteProfileButton.setDisable(false);
     }
 

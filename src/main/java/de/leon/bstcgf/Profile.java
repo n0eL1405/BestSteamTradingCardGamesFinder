@@ -73,6 +73,7 @@ public class Profile {
 
         settings.put(VERSION_KEY, VERSION);
         settings.put(NAME_KEY, this.name);
+        settings.put(Setting.STATUS_FILTER.toString(), new JSONArray(TableGameData.Status.values()));
 
         saveAsFile(file);
     }
