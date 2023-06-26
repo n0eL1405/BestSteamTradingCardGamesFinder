@@ -116,7 +116,7 @@ public class BstcgfController implements Initializable {
 
     private CountryCode selectedCountryCode;
 
-    private Settings settings = new Settings();
+    private final Settings settings = new Settings();
 
     private boolean isLoading = false;
     private boolean dontSave = false;
@@ -184,7 +184,9 @@ public class BstcgfController implements Initializable {
                             setText(null);
                         } else {
                             setText(countryCode.getLabel());
-                            settings.getActiveProfile().saveCountryCode(countryCode);
+                            if (!dontSave) {
+                                settings.getActiveProfile().saveCountryCode(countryCode);
+                            }
                         }
                     }
                 };
