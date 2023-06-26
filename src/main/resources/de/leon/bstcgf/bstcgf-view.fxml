@@ -48,6 +48,7 @@
                     </HBox.margin>
                     <Button fx:id="newProfileButton" mnemonicParsing="false" onAction="#newProfileButtonAction" text="New Profile" />
                 </StackPane>
+                <!-- Add later
                 <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
                     <HBox.margin>
                         <Insets right="5.0" top="5.0" />
@@ -58,8 +59,8 @@
                     <HBox.margin>
                         <Insets right="5.0" top="5.0" />
                     </HBox.margin>
-                    <Button fx:id="editProfileButton" mnemonicParsing="false" onAction="#editProfileButtonAction" text="Edit Profile" />
-                </StackPane>
+                    <Button fx:id="renameProfileButton" mnemonicParsing="false" onAction="#renameProfileButtonAction" text="Rename Profile" />
+                </StackPane>-->
                 <StackPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308">
                     <HBox.margin>
                         <Insets right="5.0" top="5.0" />

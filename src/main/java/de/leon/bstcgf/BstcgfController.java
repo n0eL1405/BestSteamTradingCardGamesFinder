@@ -32,14 +32,15 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Comparator;
-import java.util.LinkedList;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class BstcgfController implements Initializable {
 
@@ -101,7 +102,7 @@ public class BstcgfController implements Initializable {
     private Button copyProfileButton;
 
     @FXML
-    private Button editProfileButton;
+    private Button renameProfileButton;
 
     @FXML
     private Button deleteProfileButton;
@@ -326,7 +327,7 @@ public class BstcgfController implements Initializable {
         profileSearchComboBox.setDisable(true);
         newProfileButton.setDisable(true);
         copyProfileButton.setDisable(true);
-        editProfileButton.setDisable(true);
+        renameProfileButton.setDisable(true);
         deleteProfileButton.setDisable(true);
     }
 
@@ -339,7 +340,7 @@ public class BstcgfController implements Initializable {
         profileSearchComboBox.setDisable(false);
         newProfileButton.setDisable(false);
         copyProfileButton.setDisable(false);
-        editProfileButton.setDisable(false);
+        renameProfileButton.setDisable(false);
         deleteProfileButton.setDisable(false);
     }
 
@@ -605,14 +606,80 @@ public class BstcgfController implements Initializable {
     }
 
     public void newProfileButtonAction() {
+
+        TextInputDialog textInputDialog = new TextInputDialog();
+        textInputDialog.setTitle("New profile");
+        textInputDialog.setHeaderText("Enter name of new profile:");
+
+        Optional<String> result = textInputDialog.showAndWait();
+
+        if (result.isPresent() && !result.get().isBlank()) {
+
+            StringBuilder profileName = new StringBuilder();
+            profileName.append(result.get()
+                    // remove / replace invalid symbols / words
+                    .replace("_", " ")
+                    .replace(".json", "")
+            );
+
+            if (profilesObservableList.stream().anyMatch(profileData -> profileData.getName().equals(result.get()))) {
+                profileName.append("(")
+                        .append(profilesObservableList.stream().filter(profileData -> profileData.getName().contains(result.get())).toArray().length)
+                        .append(")");
+            }
+
+            settings.saveActiveProfile(new Profile(profileName.toString()));
+            profilesObservableList.setAll(Profile.getAllProfils());
+            profileSearchComboBox.setValue(new Profile.ProfileData(profileName.toString()));
+        }
     }
 
     public void copyProfileButtonAction() {
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Are you sure?");
+        alert.setHeaderText("Are you sure you want to kopie \"" + settings.getActiveProfile().getName() + "\"?");
+
+        ButtonType yesButton = new ButtonType("Yes");
+        ButtonType noButton = new ButtonType("No");
+
+        alert.getButtonTypes().setAll(yesButton, noButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent() && result.get() == yesButton) {
+
+            //todo new profile with old name + check for already existing name
+
+        }
+        alert.close();
     }
 
-    public void editProfileButtonAction() {
+    public void renameProfileButtonAction() {
     }
 
     public void deleteProfileButtonAction() {
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Are you sure?");
+        alert.setHeaderText("Are you sure you want to delete \"" + settings.getActiveProfile().getName() + "\"?");
+
+        ButtonType yesButton = new ButtonType("Yes");
+        ButtonType noButton = new ButtonType("No");
+
+        alert.getButtonTypes().setAll(yesButton, noButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+
+        if (result.isPresent() && result.get() == yesButton) {
+            try {
+                Files.delete(Paths.get(settings.getActiveProfile().getAbsolutePath()));
+                profilesObservableList.setAll(Profile.getAllProfils());
+                profileSearchComboBox.setValue(Profile.getAllProfils().get(0));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        alert.close();
     }
 }

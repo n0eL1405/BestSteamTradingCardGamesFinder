@@ -204,6 +204,10 @@ public class Profile {
 
     }
 
+    public String getAbsolutePath() {
+        return file.getAbsolutePath();
+    }
+
     public String getVersion() {
         return (String) settings.get(VERSION_KEY);
     }
