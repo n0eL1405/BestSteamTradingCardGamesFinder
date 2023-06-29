@@ -12,7 +12,7 @@
 
   <properties>
     <java.version>11</java.version>
-    <app.version>1.5.0</app.version>
+    <app.version>1.4.1</app.version>
     <app.versionString>v${app.version}</app.versionString>
     <app.output.name>BSTCGF</app.output.name>
 

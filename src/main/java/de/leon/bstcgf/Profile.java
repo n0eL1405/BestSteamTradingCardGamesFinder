@@ -13,10 +13,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Profile {
@@ -49,11 +46,11 @@ public class Profile {
         }
 
         if (file.exists()) {
-                try {
-                    loadData(file);
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                loadData(file);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             initNewProfile(file);
         }
@@ -276,11 +273,16 @@ public class Profile {
     }
 
     public static List<ProfileData> getAllProfils() {
-        return Arrays.stream(
-                        Objects.requireNonNull(new File(PROFILE_FOLDER).listFiles(File::isFile)))
-                // a little bit sketchy but it should work
-                .map(f -> new ProfileData(f.getName().replace(".json", "").replace("_", " ")))
-                .collect(Collectors.toList());
+        List<ProfileData> profiles = new LinkedList<>();
+
+        try {
+            profiles = Arrays.stream(
+                    Objects.requireNonNull(new File(PROFILE_FOLDER).listFiles(File::isFile)))
+                    // a little bit sketchy but it should work
+                    .map(f -> new ProfileData(f.getName().replace(".json", "").replace("_", " ")))
+                    .collect(Collectors.toList());
+        } catch (NullPointerException ignore) {}
+        return profiles;
     }
 
     @Data
